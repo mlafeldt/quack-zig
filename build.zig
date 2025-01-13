@@ -12,8 +12,8 @@ const Platform = enum {
 
 pub fn build(b: *std.Build) !void {
     const optimize = b.standardOptimizeOption(.{});
-
     const platforms = b.option([]const Platform, "duckdb-platform", "DuckDB platform(s) to build for (default: all)") orelse std.enums.values(Platform);
+    const install_lib = b.option(bool, "duckdb-lib", "Copy DuckDB library and headers to installation prefix") orelse false;
 
     for (platforms) |platform| {
         const target = b.resolveTargetQuery(switch (platform) {
@@ -61,8 +61,6 @@ pub fn build(b: *std.Build) !void {
         const filename = b.fmt("{s}.duckdb_extension", .{ext.name});
         ext.install_name = b.fmt("@rpath/{s}", .{filename}); // macOS only
 
-        const platform_name = @tagName(platform);
-
         const output = out: {
             const tools = b.dependency("extension_ci_tools", .{});
             const cmd = b.addSystemCommand(&.{
@@ -72,22 +70,26 @@ pub fn build(b: *std.Build) !void {
             cmd.addArgs(&.{ "--extension-name", ext.name });
             cmd.addArgs(&.{ "--extension-version", "v0.0.0" });
             cmd.addArgs(&.{ "--duckdb-version", "v0.0.1" });
-            cmd.addArgs(&.{ "--duckdb-platform", platform_name });
+            cmd.addArgs(&.{ "--duckdb-platform", @tagName(platform) });
             cmd.addArg("--library-file");
             cmd.addArtifactArg(ext);
             cmd.addArg("--out-file");
             break :out cmd.addOutputFileArg(filename);
         };
 
+        const install_dir = @tagName(platform);
+
         b.getInstallStep().dependOn(&b.addInstallFileWithDir(
             output,
-            .{ .custom = platform_name },
+            .{ .custom = install_dir },
             filename,
         ).step);
 
-        b.getInstallStep().dependOn(&b.addInstallArtifact(duckdb, .{
-            .dest_dir = .{ .override = .{ .custom = platform_name } },
-        }).step);
+        if (install_lib) {
+            b.getInstallStep().dependOn(&b.addInstallArtifact(duckdb, .{
+                .dest_dir = .{ .override = .{ .custom = install_dir } },
+            }).step);
+        }
     }
 }
 
