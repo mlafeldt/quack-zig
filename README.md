@@ -2,9 +2,9 @@
 
 The infamous [DuckDB quack extension](https://duckdb.org/community_extensions/extensions/quack.html) rewritten in C and built with Zig.
 
-## Building
+## Building the Extension
 
-[Install Zig](https://ziglang.org/learn/getting-started/). That's it, no other dependencies are required.
+[Install Zig](https://ziglang.org/learn/getting-started/). That's it. No other dependencies are required.
 
 Now experience the power of the [Zig Build System](https://ziglang.org/learn/build-system/) with these commands:
 
@@ -17,6 +17,9 @@ zig build -Dplatform=linux_amd64
 
 # Build for multiple platforms
 zig build -Dplatform=linux_arm64 -Dplatform=osx_arm64 -Dplatform=windows_arm64
+
+# Build for a specific DuckDB version
+zig build -Dduckdb-version=1.1.2
 
 # Optimize for performance
 zig build --release=fast
@@ -48,3 +51,36 @@ zig-out
 ```
 
 See `zig build --help` for more options.
+
+## Advanced: Creating an Extension Repository
+
+By providing an installation prefix, you can easily create a [custom extension repository](https://duckdb.org/docs/extensions/working_with_extensions.html#creating-a-custom-repository).
+
+Here's an example:
+
+```
+zig build -Dduckdb-version=1.1.2 --prefix repo/v1.1.2 --release=fast
+
+zig build -Dduckdb-version=1.1.3 --prefix repo/v1.1.3 --release=fast
+```
+
+This will generate a repository with the following structure, ready to be uploaded to S3:
+
+```
+❯ tree -d repo
+repo
+├── v1.1.2
+│   ├── linux_amd64
+│   ├── linux_arm64
+│   ├── osx_amd64
+│   ├── osx_arm64
+│   ├── windows_amd64
+│   └── windows_arm64
+└── v1.1.3
+    ├── linux_amd64
+    ├── linux_arm64
+    ├── osx_amd64
+    ├── osx_arm64
+    ├── windows_amd64
+    └── windows_arm64
+```

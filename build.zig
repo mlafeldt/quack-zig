@@ -1,6 +1,14 @@
 const std = @import("std");
 
-// https://duckdb.org/docs/dev/building/overview.html#supported-platforms
+const DuckDBVersion = enum {
+    @"1.1.3",
+    @"1.1.2",
+    @"1.1.1",
+    @"1.1.0",
+    @"1.0.0",
+};
+const DefaultDuckDBVersion = std.enums.values(DuckDBVersion)[0];
+
 const Platform = enum {
     linux_amd64,
     linux_arm64,
@@ -12,6 +20,7 @@ const Platform = enum {
 
 pub fn build(b: *std.Build) !void {
     const optimize = b.standardOptimizeOption(.{});
+    const duckdb_version = b.option(DuckDBVersion, "duckdb-version", b.fmt("DuckDB version to build for (default: {s})", .{@tagName(DefaultDuckDBVersion)})) orelse DefaultDuckDBVersion;
     const platforms = b.option([]const Platform, "platform", "DuckDB platform(s) to build for (default: all)") orelse std.enums.values(Platform);
     const install_lib = b.option(bool, "install-lib", "Install DuckDB library and headers") orelse false;
 
@@ -25,7 +34,7 @@ pub fn build(b: *std.Build) !void {
             .windows_arm64 => .{ .os_tag = .windows, .cpu_arch = .aarch64, .abi = .gnu },
         });
 
-        const upstream = b.dependency("duckdb", .{});
+        const upstream = b.lazyDependency(b.fmt("duckdb-{s}", .{@tagName(duckdb_version)}), .{}).?;
         const duckdb = b.addStaticLibrary(.{
             .name = "duckdb",
             .target = target,
@@ -57,6 +66,7 @@ pub fn build(b: *std.Build) !void {
         ext.linkLibC();
         ext.root_module.addCMacro("DUCKDB_EXTENSION_NAME", ext.name);
         ext.root_module.addCMacro("DUCKDB_BUILD_LOADABLE_EXTENSION", "1");
+        ext.root_module.addCMacro("DUCKDB_VERSION", b.fmt("\"{s}\"", .{@tagName(duckdb_version)}));
 
         const filename = b.fmt("{s}.duckdb_extension", .{ext.name});
         ext.install_name = b.fmt("@rpath/{s}", .{filename}); // macOS only
@@ -69,8 +79,8 @@ pub fn build(b: *std.Build) !void {
             });
             cmd.addArgs(&.{ "--extension-name", ext.name });
             cmd.addArgs(&.{ "--extension-version", "v0.0.0" });
-            cmd.addArgs(&.{ "--duckdb-version", "v0.0.1" });
             cmd.addArgs(&.{ "--duckdb-platform", @tagName(platform) });
+            cmd.addArgs(&.{ "--duckdb-version", "v0.0.1" }); // TODO: Set this based on the DuckDB version
             cmd.addArg("--library-file");
             cmd.addArtifactArg(ext);
             cmd.addArg("--out-file");
