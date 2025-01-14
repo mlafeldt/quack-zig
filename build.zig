@@ -12,8 +12,8 @@ const Platform = enum {
 
 pub fn build(b: *std.Build) !void {
     const optimize = b.standardOptimizeOption(.{});
-    const platforms = b.option([]const Platform, "duckdb-platform", "DuckDB platform(s) to build for (default: all)") orelse std.enums.values(Platform);
-    const install_lib = b.option(bool, "duckdb-lib", "Copy DuckDB library and headers to installation prefix") orelse false;
+    const platforms = b.option([]const Platform, "platform", "DuckDB platform(s) to build for (default: all)") orelse std.enums.values(Platform);
+    const install_lib = b.option(bool, "install-lib", "Install DuckDB library and headers") orelse false;
 
     for (platforms) |platform| {
         const target = b.resolveTargetQuery(switch (platform) {
