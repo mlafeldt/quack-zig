@@ -24,6 +24,10 @@ pub fn build(b: *std.Build) !void {
     const platforms = b.option([]const Platform, "platform", "DuckDB platform(s) to build for (default: all)") orelse std.enums.values(Platform);
     const install_lib = b.option(bool, "install-lib", "Install DuckDB library and headers") orelse false;
 
+    const metadata_script = b.dependency("extension_ci_tools", .{})
+        .path("scripts/append_extension_metadata.py")
+        .getPath(b);
+
     for (platforms) |platform| {
         const target = b.resolveTargetQuery(switch (platform) {
             .linux_amd64 => .{ .os_tag = .linux, .cpu_arch = .x86_64, .abi = .gnu },
@@ -72,11 +76,7 @@ pub fn build(b: *std.Build) !void {
         ext.install_name = b.fmt("@rpath/{s}", .{filename}); // macOS only
 
         const output = out: {
-            const tools = b.dependency("extension_ci_tools", .{});
-            const cmd = b.addSystemCommand(&.{
-                "python3",
-                tools.path("scripts/append_extension_metadata.py").getPath(b),
-            });
+            const cmd = b.addSystemCommand(&.{ "python3", metadata_script });
             cmd.addArgs(&.{ "--extension-name", ext.name });
             cmd.addArgs(&.{ "--extension-version", "v0.0.0" });
             cmd.addArgs(&.{ "--duckdb-platform", @tagName(platform) });
