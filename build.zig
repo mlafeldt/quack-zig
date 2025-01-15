@@ -34,7 +34,7 @@ pub fn build(b: *std.Build) !void {
             .windows_arm64 => .{ .os_tag = .windows, .cpu_arch = .aarch64, .abi = .gnu },
         });
 
-        const upstream = b.lazyDependency(b.fmt("duckdb-{s}", .{@tagName(duckdb_version)}), .{}).?;
+        const upstream = b.lazyDependency(b.fmt("duckdb-{s}", .{@tagName(duckdb_version)}), .{}) orelse continue;
         const duckdb = b.addStaticLibrary(.{
             .name = "duckdb",
             .target = target,
