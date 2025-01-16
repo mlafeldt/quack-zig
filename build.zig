@@ -1,13 +1,13 @@
 const std = @import("std");
 
 const DuckDBVersion = enum {
-    @"1.1.3",
-    @"1.1.2",
-    @"1.1.1",
-    @"1.1.0",
     @"1.0.0",
+    @"1.1.0",
+    @"1.1.1",
+    @"1.1.2",
+    @"1.1.3",
 };
-const DefaultDuckDBVersion = std.enums.values(DuckDBVersion)[0];
+const DefaultDuckDBVersion = DuckDBVersion.@"1.1.3";
 
 const Platform = enum {
     linux_amd64,
