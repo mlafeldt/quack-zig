@@ -1,6 +1,6 @@
 .{
     .name = "duckdb-quack",
-    .version = "0.0.0",
+    .version = "0.0.0", // unused
     .minimum_zig_version = "0.14.0-dev.2577+271452d22", // 2024.11.0-mach
     .dependencies = .{
         .@"duckdb-1.0.0" = .{

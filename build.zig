@@ -24,6 +24,20 @@ pub fn build(b: *std.Build) !void {
     const platforms = b.option([]const Platform, "platform", "DuckDB platform(s) to build for (default: all)") orelse std.enums.values(Platform);
     const install_lib = b.option(bool, "install-lib", "Install DuckDB library and headers") orelse false;
 
+    const ext_version = v: {
+        const git_describe = b.run(&[_][]const u8{
+            "git",
+            "-C",
+            b.build_root.path orelse ".",
+            "describe",
+            "--tags",
+            "--match",
+            "v[0-9]*",
+            "--always",
+        });
+        break :v std.mem.trim(u8, git_describe, " \n\r");
+    };
+
     const metadata_script = b.dependency("extension_ci_tools", .{})
         .path("scripts/append_extension_metadata.py")
         .getPath(b);
@@ -78,7 +92,7 @@ pub fn build(b: *std.Build) !void {
         const output = out: {
             const cmd = b.addSystemCommand(&.{ "python3", metadata_script });
             cmd.addArgs(&.{ "--extension-name", ext.name });
-            cmd.addArgs(&.{ "--extension-version", "v0.0.0" });
+            cmd.addArgs(&.{ "--extension-version", ext_version });
             cmd.addArgs(&.{ "--duckdb-platform", @tagName(platform) });
             cmd.addArgs(&.{ "--duckdb-version", "v0.0.1" }); // TODO: Set this based on the DuckDB version
             cmd.addArg("--library-file");
