@@ -52,6 +52,22 @@ zig-out
 
 See `zig build --help` for more options.
 
+## Using the Extension
+
+```
+❯ duckdb -unsigned
+v1.1.3 19864453f7
+Enter ".help" for usage hints.
+🟡◗ LOAD 'zig-out/osx_arm64/quack.duckdb_extension';
+🟡◗ SELECT quack('||| Arena');
+┌────────────────────┐
+│ quack('||| Arena') │
+│      varchar       │
+├────────────────────┤
+│ Quack ||| Arena 🐥 │
+└────────────────────┘
+```
+
 ## Advanced: Creating an Extension Repository
 
 By providing an installation prefix, you can easily create a [custom extension repository](https://duckdb.org/docs/extensions/working_with_extensions.html#creating-a-custom-repository).
