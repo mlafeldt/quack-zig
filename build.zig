@@ -6,8 +6,9 @@ const DuckDBVersion = enum {
     @"1.1.1",
     @"1.1.2",
     @"1.1.3",
+
+    const default: DuckDBVersion = .@"1.1.3";
 };
-const DefaultDuckDBVersion = DuckDBVersion.@"1.1.3";
 
 const Platform = enum {
     linux_amd64,
@@ -20,7 +21,7 @@ const Platform = enum {
 
 pub fn build(b: *std.Build) !void {
     const optimize = b.standardOptimizeOption(.{});
-    const duckdb_version = b.option(DuckDBVersion, "duckdb-version", b.fmt("DuckDB version to build for (default: {s})", .{@tagName(DefaultDuckDBVersion)})) orelse DefaultDuckDBVersion;
+    const duckdb_version = b.option(DuckDBVersion, "duckdb-version", b.fmt("DuckDB version to build for (default: {s})", .{@tagName(DuckDBVersion.default)})) orelse DuckDBVersion.default;
     const platforms = b.option([]const Platform, "platform", "DuckDB platform(s) to build for (default: all)") orelse std.enums.values(Platform);
     const install_lib = b.option(bool, "install-lib", "Install DuckDB library and headers") orelse false;
 
