@@ -67,7 +67,9 @@ pub fn build(b: *std.Build) !void {
                 "-Wno-date-time",
             },
         });
-        duckdb.installHeadersDirectory(upstream.path("."), "", .{});
+        duckdb.installHeadersDirectory(upstream.path("."), "", .{
+            .include_extensions = &.{ ".h", ".hpp" },
+        });
         duckdb.linkLibCpp();
         duckdb.root_module.addCMacro("DUCKDB_STATIC_BUILD", "1");
 
@@ -84,7 +86,6 @@ pub fn build(b: *std.Build) !void {
         ext.linkLibC();
         ext.root_module.addCMacro("DUCKDB_EXTENSION_NAME", ext.name);
         ext.root_module.addCMacro("DUCKDB_BUILD_LOADABLE_EXTENSION", "1");
-        ext.root_module.addCMacro("DUCKDB_VERSION", b.fmt("\"{s}\"", .{@tagName(duckdb_version)}));
 
         const filename = b.fmt("{s}.duckdb_extension", .{ext.name});
         ext.install_name = b.fmt("@rpath/{s}", .{filename}); // macOS only
