@@ -72,6 +72,7 @@ pub fn build(b: *std.Build) !void {
         const filename = b.fmt("{s}.duckdb_extension", .{ext.name});
         ext.install_name = b.fmt("@rpath/{s}", .{filename}); // macOS only
 
+        // TODO: Rewrite the metadata script in Zig
         const output = out: {
             const cmd = b.addSystemCommand(&.{ "python3", metadata_script });
             cmd.addArgs(&.{ "--extension-name", ext.name });
