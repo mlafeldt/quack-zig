@@ -11,10 +11,10 @@ jobs:
   build:
     name: Build extension
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: mlugg/setup-zig@v1
         with:
-          version: "2024.11.0-mach"
+          version: "0.13.0"
       - run: zig build --verbose --summary all
