@@ -80,7 +80,7 @@ pub fn build(b: *std.Build) !void {
             .optimize = optimize,
         });
         ext.addCSourceFiles(.{
-            .files = &.{"quack.c"},
+            .files = &.{"quack_extension.c"},
             .flags = &cflags,
         });
         ext.linkLibrary(duckdb);
