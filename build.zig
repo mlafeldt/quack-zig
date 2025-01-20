@@ -23,7 +23,7 @@ pub fn build(b: *std.Build) !void {
     const optimize = b.standardOptimizeOption(.{});
     const duckdb_version = b.option(DuckDBVersion, "duckdb-version", b.fmt("DuckDB version to build for (default: {s})", .{@tagName(DuckDBVersion.default)})) orelse DuckDBVersion.default;
     const platforms = b.option([]const Platform, "platform", "DuckDB platform(s) to build for (default: all)") orelse std.enums.values(Platform);
-    const install_lib = b.option(bool, "install-lib", "Install DuckDB library and headers") orelse false;
+    const install_headers = b.option(bool, "install-headers", "Install DuckDB C headers") orelse false;
 
     const ext_version = v: {
         const git_describe = b.run(&[_][]const u8{
@@ -53,26 +53,7 @@ pub fn build(b: *std.Build) !void {
             .windows_arm64 => .{ .os_tag = .windows, .cpu_arch = .aarch64, .abi = .gnu },
         });
 
-        const upstream = b.lazyDependency(b.fmt("duckdb-{s}", .{@tagName(duckdb_version)}), .{}) orelse continue;
-        const duckdb = b.addStaticLibrary(.{
-            .name = "duckdb",
-            .target = target,
-            .optimize = optimize,
-        });
-        duckdb.addCSourceFiles(.{
-            .files = &.{"duckdb.cpp"},
-            .root = upstream.path(""),
-            .flags = &.{
-                // Fix error: expansion of date or time macro is not reproducible
-                // https://github.com/duckdb/duckdb/blob/v1.1.3/third_party/pcg/pcg_extras.hpp#L628
-                "-Wno-date-time",
-            },
-        });
-        duckdb.installHeadersDirectory(upstream.path("."), "", .{
-            .include_extensions = &.{ ".h", ".hpp" },
-        });
-        duckdb.linkLibCpp();
-        duckdb.root_module.addCMacro("DUCKDB_STATIC_BUILD", "1");
+        const duckdb = b.lazyDependency(b.fmt("duckdb-{s}", .{@tagName(duckdb_version)}), .{}) orelse continue;
 
         const ext = b.addSharedLibrary(.{
             .name = "quack",
@@ -83,7 +64,7 @@ pub fn build(b: *std.Build) !void {
             .files = &.{"quack_extension.c"},
             .flags = &cflags,
         });
-        ext.linkLibrary(duckdb);
+        ext.addIncludePath(duckdb.path(""));
         ext.linkLibC();
         ext.root_module.addCMacro("DUCKDB_EXTENSION_NAME", ext.name);
         ext.root_module.addCMacro("DUCKDB_BUILD_LOADABLE_EXTENSION", "1");
@@ -111,9 +92,12 @@ pub fn build(b: *std.Build) !void {
             filename,
         ).step);
 
-        if (install_lib) {
-            b.getInstallStep().dependOn(&b.addInstallArtifact(duckdb, .{
-                .dest_dir = .{ .override = .{ .custom = install_dir } },
+        if (install_headers) {
+            b.getInstallStep().dependOn(&b.addInstallDirectory(.{
+                .source_dir = duckdb.path(""),
+                .include_extensions = &.{"h"},
+                .install_dir = .header,
+                .install_subdir = "",
             }).step);
         }
     }

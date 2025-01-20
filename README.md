@@ -27,8 +27,8 @@ zig build --release=fast
 # Optimize for binary size
 zig build --release=small
 
-# Also install DuckDB library and headers
-zig build -Dinstall-lib
+# Also install DuckDB headers
+zig build -Dinstall-headers
 ```
 
 The build output will look like this:
