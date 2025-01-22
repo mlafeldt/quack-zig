@@ -74,10 +74,13 @@ pub fn build(b: *std.Build) !void {
 
         // TODO: Rewrite the metadata script in Zig
         const ext_path = out: {
+            // HACK: Allow to override platform for GitHub Actions where linux_amd64_gcc4 is used
+            const platform_name = std.process.getEnvVarOwned(b.allocator, "DUCKDB_METADATA_PLATFORM") catch @tagName(platform);
+
             const cmd = b.addSystemCommand(&.{ "uv", "run", "--python=3", metadata_script });
             cmd.addArgs(&.{ "--extension-name", ext.name });
             cmd.addArgs(&.{ "--extension-version", ext_version });
-            cmd.addArgs(&.{ "--duckdb-platform", @tagName(platform) });
+            cmd.addArgs(&.{ "--duckdb-platform", platform_name });
             cmd.addArgs(&.{ "--duckdb-version", "v0.0.1" }); // TODO: Set this based on the DuckDB version
             cmd.addArg("--library-file");
             cmd.addArtifactArg(ext);

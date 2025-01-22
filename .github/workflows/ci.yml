@@ -22,4 +22,6 @@ jobs:
       - uses: mlugg/setup-zig@v1
         with:
           version: "0.13.0"
+      - uses: astral-sh/setup-uv@v5
       - run: zig build -Dduckdb-version=${{ matrix.duckdb_version }} -Dinstall-headers --verbose --summary new
+      - run: DUCKDB_METADATA_PLATFORM=linux_amd64_gcc4 zig build test -Dduckdb-version=${{ matrix.duckdb_version }} --summary none
