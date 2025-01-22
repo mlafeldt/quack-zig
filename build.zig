@@ -94,12 +94,18 @@ pub fn build(b: *std.Build) !void {
         ).step);
 
         if (install_headers) {
-            b.getInstallStep().dependOn(&b.addInstallDirectory(.{
-                .source_dir = duckdb.path(""),
-                .include_extensions = &.{"h"},
-                .install_dir = .header,
-                .install_subdir = "",
-            }).step);
+            const header_dirs = [_]std.Build.LazyPath{
+                duckdb.path(""),
+                // Add more header directories here
+            };
+            for (header_dirs) |dir| {
+                b.getInstallStep().dependOn(&b.addInstallDirectory(.{
+                    .source_dir = dir,
+                    .include_extensions = &.{"h"},
+                    .install_dir = .header,
+                    .install_subdir = "",
+                }).step);
+            }
         }
 
         // Run tests on native platform
