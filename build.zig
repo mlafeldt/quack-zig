@@ -123,7 +123,7 @@ pub fn build(b: *std.Build) !void {
             cmd.addArg("--external-extension");
             cmd.addFileArg(ext_path);
 
-            const test_step = b.step("test", "Run unit tests with sqllogictest");
+            const test_step = b.step("test", "Run SQL logic tests");
             test_step.dependOn(&cmd.step);
         }
     }

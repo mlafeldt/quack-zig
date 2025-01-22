@@ -4,7 +4,7 @@ The infamous [DuckDB quack extension](https://duckdb.org/community_extensions/ex
 
 ## Building the Extension
 
-[Install Zig](https://ziglang.org/learn/getting-started/). That's it. No other dependencies are required.
+Install [Zig](https://ziglang.org) and [uv](https://docs.astral.sh/uv/). That's it. No other dependencies are required.
 
 Now experience the power of the [Zig Build System](https://ziglang.org/learn/build-system/) with these commands:
 
@@ -52,6 +52,16 @@ zig-out
 
 See `zig build --help` for more options.
 
+## Testing
+
+Run the [SQL logic tests](https://duckdb.org/docs/dev/sqllogictest/intro.html) with `zig build test`.
+
+```
+❯ zig build test
+[0/1] test/sql/quack.test
+SUCCESS
+```
+
 ## Using the Extension
 
 ```
@@ -59,13 +69,13 @@ See `zig build --help` for more options.
 v1.1.3 19864453f7
 Enter ".help" for usage hints.
 🟡◗ LOAD 'zig-out/osx_arm64/quack.duckdb_extension';
-🟡◗ SELECT quack('||| Arena');
-┌────────────────────┐
-│ quack('||| Arena') │
-│      varchar       │
-├────────────────────┤
-│ Quack ||| Arena 🐥 │
-└────────────────────┘
+🟡◗ SELECT quack('Zig');
+┌──────────────┐
+│ quack('Zig') │
+│   varchar    │
+├──────────────┤
+│ Quack Zig 🐥 │
+└──────────────┘
 ```
 
 ## Advanced: Creating an Extension Repository
