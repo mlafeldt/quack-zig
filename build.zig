@@ -119,4 +119,9 @@ pub fn build(b: *std.Build) !void {
     }
 }
 
-const cflags = [_][]const u8{ "-Wall", "-Wextra", "-Werror" };
+const cflags = [_][]const u8{
+    "-Wall",
+    "-Wextra",
+    "-Werror",
+    "-fvisibility=hidden", // Avoid symbol clashes
+};
