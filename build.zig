@@ -32,7 +32,8 @@ pub fn build(b: *std.Build) !void {
     const install_headers = b.option(bool, "install-headers", "Install DuckDB C headers") orelse false;
 
     const ext_version = v: {
-        const git_describe = b.run(&[_][]const u8{
+        var code: u8 = undefined;
+        const git_describe = b.runAllowFail(&[_][]const u8{
             "git",
             "-C",
             b.build_root.path orelse ".",
@@ -41,7 +42,7 @@ pub fn build(b: *std.Build) !void {
             "--match",
             "v[0-9]*",
             "--always",
-        });
+        }, &code, .Ignore) catch "n/a";
         break :v std.mem.trim(u8, git_describe, " \n\r");
     };
 
@@ -64,7 +65,9 @@ pub fn build(b: *std.Build) !void {
             .optimize = optimize,
         });
         ext.addCSourceFiles(.{
-            .files = &.{"quack_extension.c"},
+            .files = &.{
+                "quack_extension.c",
+            },
             .flags = &cflags,
         });
         ext.addIncludePath(duckdb.path(""));
