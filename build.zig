@@ -19,10 +19,6 @@ const Platform = enum {
     windows_arm64,
 };
 
-// TODO: Switch to Python package once it's available
-const sqllogictest_repo = "git+https://github.com/duckdb/duckdb-sqllogictest-python@faf6f19";
-const metadata_script = "https://raw.githubusercontent.com/duckdb/extension-ci-tools/refs/heads/v1.1.3/scripts/append_extension_metadata.py";
-
 pub fn build(b: *std.Build) !void {
     const optimize = b.standardOptimizeOption(.{});
     const duckdb_version = b.option(DuckDBVersion, "duckdb-version", b.fmt("DuckDB version to build for (default: {s})", .{@tagName(DuckDBVersion.default)})) orelse DuckDBVersion.default;
@@ -78,9 +74,8 @@ pub fn build(b: *std.Build) !void {
         const filename = b.fmt("{s}.duckdb_extension", .{ext.name});
         ext.install_name = b.fmt("@rpath/{s}", .{filename}); // macOS only
 
-        // TODO: Rewrite the metadata script in Zig
-        const ext_path = out: {
-            const cmd = b.addSystemCommand(&.{ "uv", "run", "--python=3", metadata_script });
+        const ext_path = path: {
+            const cmd = b.addSystemCommand(&.{ "uv", "run", metadata_script });
             cmd.addArgs(&.{ "--extension-name", ext.name });
             cmd.addArgs(&.{ "--extension-version", ext_version });
             cmd.addArgs(&.{ "--duckdb-platform", platform_name });
@@ -88,14 +83,14 @@ pub fn build(b: *std.Build) !void {
             cmd.addArg("--library-file");
             cmd.addArtifactArg(ext);
             cmd.addArg("--out-file");
-            break :out cmd.addOutputFileArg(filename);
+            const path = cmd.addOutputFileArg(filename);
+            cmd.step.name = b.fmt("add metadata {s}", .{platform_name});
+            break :path path;
         };
 
-        b.getInstallStep().dependOn(&b.addInstallFileWithDir(
-            ext_path,
-            .{ .custom = platform_name },
-            filename,
-        ).step);
+        const install_file = b.addInstallFileWithDir(ext_path, .{ .custom = platform_name }, filename);
+        install_file.step.name = b.fmt("install {s}/{s}", .{ platform_name, filename });
+        b.getInstallStep().dependOn(&install_file.step);
 
         if (install_headers) {
             const header_dirs = [_]std.Build.LazyPath{
@@ -122,6 +117,7 @@ pub fn build(b: *std.Build) !void {
             cmd.addArgs(&.{ "--test-dir", "test" });
             cmd.addArg("--external-extension");
             cmd.addFileArg(ext_path);
+            cmd.step.name = "sqllogictest";
 
             const test_step = b.step("test", "Run SQL logic tests");
             test_step.dependOn(&cmd.step);
@@ -135,3 +131,8 @@ const cflags = [_][]const u8{
     "-Werror",
     "-fvisibility=hidden", // Avoid symbol clashes
 };
+
+// TODO: Switch to Python package once it's available
+const sqllogictest_repo = "git+https://github.com/duckdb/duckdb-sqllogictest-python@faf6f19";
+
+const metadata_script = "https://raw.githubusercontent.com/duckdb/extension-ci-tools/refs/heads/v1.1.3/scripts/append_extension_metadata.py";
