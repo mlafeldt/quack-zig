@@ -19,6 +19,9 @@ const Platform = enum {
     windows_arm64,
 };
 
+// TODO: Switch to Python package once it's available
+const sqllogictest_repo = "git+https://github.com/duckdb/duckdb-sqllogictest-python@faf6f19";
+
 pub fn build(b: *std.Build) !void {
     const optimize = b.standardOptimizeOption(.{});
     const duckdb_version = b.option(DuckDBVersion, "duckdb-version", b.fmt("DuckDB version to build for (default: {s})", .{@tagName(DuckDBVersion.default)})) orelse DuckDBVersion.default;
@@ -73,7 +76,7 @@ pub fn build(b: *std.Build) !void {
         ext.install_name = b.fmt("@rpath/{s}", .{filename}); // macOS only
 
         // TODO: Rewrite the metadata script in Zig
-        const output = out: {
+        const ext_path = out: {
             const cmd = b.addSystemCommand(&.{ "python3", metadata_script });
             cmd.addArgs(&.{ "--extension-name", ext.name });
             cmd.addArgs(&.{ "--extension-version", ext_version });
@@ -88,7 +91,7 @@ pub fn build(b: *std.Build) !void {
         const install_dir = @tagName(platform);
 
         b.getInstallStep().dependOn(&b.addInstallFileWithDir(
-            output,
+            ext_path,
             .{ .custom = install_dir },
             filename,
         ).step);
@@ -100,6 +103,21 @@ pub fn build(b: *std.Build) !void {
                 .install_dir = .header,
                 .install_subdir = "",
             }).step);
+        }
+
+        // Run tests on native platform
+        if (b.host.result.os.tag == target.result.os.tag and b.host.result.cpu.arch == target.result.cpu.arch) {
+            const cmd = b.addSystemCommand(&.{ "uv", "run" });
+            cmd.addArg("--quiet");
+            cmd.addArgs(&.{ "--with", sqllogictest_repo });
+            cmd.addArgs(&.{ "--with", b.fmt("duckdb=={s}", .{@tagName(duckdb_version)}) });
+            cmd.addArgs(&.{ "python3", "-m", "duckdb_sqllogictest" });
+            cmd.addArgs(&.{ "--test-dir", "test" });
+            cmd.addArg("--external-extension");
+            cmd.addFileArg(ext_path);
+
+            const test_step = b.step("test", "Run unit tests with sqllogictest");
+            test_step.dependOn(&cmd.step);
         }
     }
 }

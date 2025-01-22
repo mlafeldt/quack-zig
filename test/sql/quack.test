@@ -1,0 +1,27 @@
+# name: test/sql/quack.test
+# description: Test quack extension
+# group: [quack]
+
+# Before we load the extension, this will fail
+statement error
+SELECT quack('Zig')
+----
+Catalog Error: Scalar Function with name quack does not exist!
+
+# Require statement will ensure this test is run with this extension loaded
+require quack
+
+# Enable query verification
+statement ok
+PRAGMA enable_verification
+
+# Confirm the extension works
+query I
+SELECT quack('Zig')
+----
+Quack Zig 🐥
+
+query I
+SELECT quack('||| Arena is a multiplayer-focused first-person shooter released in 1999')
+----
+Quack ||| Arena is a multiplayer-focused first-person shooter released in 1999 🐥
