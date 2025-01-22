@@ -27,6 +27,8 @@ pub fn build(b: *std.Build) !void {
     const optimize = b.standardOptimizeOption(.{});
     const duckdb_version = b.option(DuckDBVersion, "duckdb-version", b.fmt("DuckDB version to build for (default: {s})", .{@tagName(DuckDBVersion.default)})) orelse DuckDBVersion.default;
     const platforms = b.option([]const Platform, "platform", "DuckDB platform(s) to build for (default: all)") orelse std.enums.values(Platform);
+    // HACK: Allow to override platform for GitHub Actions where linux_amd64_gcc4 is used
+    const platform_suffix = b.option([]const u8, "platform-suffix", "Add suffix to platform name, e.g. gcc4");
     const install_headers = b.option(bool, "install-headers", "Install DuckDB C headers") orelse false;
 
     const ext_version = v: {
@@ -52,6 +54,7 @@ pub fn build(b: *std.Build) !void {
             .windows_amd64 => .{ .os_tag = .windows, .cpu_arch = .x86_64, .abi = .gnu },
             .windows_arm64 => .{ .os_tag = .windows, .cpu_arch = .aarch64, .abi = .gnu },
         });
+        const platform_name = if (platform_suffix) |suffix| b.fmt("{s}_{s}", .{ @tagName(platform), suffix }) else @tagName(platform);
 
         const duckdb = b.lazyDependency(b.fmt("duckdb-{s}", .{@tagName(duckdb_version)}), .{}) orelse continue;
 
@@ -74,9 +77,6 @@ pub fn build(b: *std.Build) !void {
 
         // TODO: Rewrite the metadata script in Zig
         const ext_path = out: {
-            // HACK: Allow to override platform for GitHub Actions where linux_amd64_gcc4 is used
-            const platform_name = std.process.getEnvVarOwned(b.allocator, "DUCKDB_METADATA_PLATFORM") catch @tagName(platform);
-
             const cmd = b.addSystemCommand(&.{ "uv", "run", "--python=3", metadata_script });
             cmd.addArgs(&.{ "--extension-name", ext.name });
             cmd.addArgs(&.{ "--extension-version", ext_version });
@@ -88,11 +88,9 @@ pub fn build(b: *std.Build) !void {
             break :out cmd.addOutputFileArg(filename);
         };
 
-        const install_dir = @tagName(platform);
-
         b.getInstallStep().dependOn(&b.addInstallFileWithDir(
             ext_path,
-            .{ .custom = install_dir },
+            .{ .custom = platform_name },
             filename,
         ).step);
 
