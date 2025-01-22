@@ -28,10 +28,6 @@
             .hash = "122081554b2ca7ea7fb02462dda7ec41c39ca42e6b8e663b3636ee10eb3cb86cef55",
             .lazy = true,
         },
-        .extension_ci_tools = .{
-            .url = "https://github.com/duckdb/extension-ci-tools/archive/v1.1.3.tar.gz",
-            .hash = "1220b2dbcf900b96bf9f2242af1ebac5f7f4b78a62cca0f78814f86204e7045be7c1",
-        },
     },
     .paths = .{""},
 }

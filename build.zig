@@ -21,6 +21,7 @@ const Platform = enum {
 
 // TODO: Switch to Python package once it's available
 const sqllogictest_repo = "git+https://github.com/duckdb/duckdb-sqllogictest-python@faf6f19";
+const metadata_script = "https://raw.githubusercontent.com/duckdb/extension-ci-tools/refs/heads/v1.1.3/scripts/append_extension_metadata.py";
 
 pub fn build(b: *std.Build) !void {
     const optimize = b.standardOptimizeOption(.{});
@@ -41,10 +42,6 @@ pub fn build(b: *std.Build) !void {
         });
         break :v std.mem.trim(u8, git_describe, " \n\r");
     };
-
-    const metadata_script = b.dependency("extension_ci_tools", .{})
-        .path("scripts/append_extension_metadata.py")
-        .getPath(b);
 
     for (platforms) |platform| {
         const target = b.resolveTargetQuery(switch (platform) {
@@ -77,7 +74,7 @@ pub fn build(b: *std.Build) !void {
 
         // TODO: Rewrite the metadata script in Zig
         const ext_path = out: {
-            const cmd = b.addSystemCommand(&.{ "python3", metadata_script });
+            const cmd = b.addSystemCommand(&.{ "uv", "run", "--python=3", metadata_script });
             cmd.addArgs(&.{ "--extension-name", ext.name });
             cmd.addArgs(&.{ "--extension-version", ext_version });
             cmd.addArgs(&.{ "--duckdb-platform", @tagName(platform) });
