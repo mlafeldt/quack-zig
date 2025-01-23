@@ -64,6 +64,7 @@ pub fn build(b: *std.Build) !void {
             .files = &.{
                 "quack_extension.c",
             },
+            .root = b.path("src"),
             .flags = &cflags,
         });
         ext.addIncludePath(duckdb.path(""));
