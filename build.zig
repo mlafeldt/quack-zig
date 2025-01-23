@@ -7,7 +7,7 @@ const DuckDBVersion = enum {
     @"1.1.2",
     @"1.1.3",
 
-    const default: DuckDBVersion = .@"1.1.3";
+    const latest: DuckDBVersion = .@"1.1.3";
 };
 
 const Platform = enum {
@@ -21,7 +21,7 @@ const Platform = enum {
 
 pub fn build(b: *std.Build) !void {
     const optimize = b.standardOptimizeOption(.{});
-    const duckdb_version = b.option(DuckDBVersion, "duckdb-version", b.fmt("DuckDB version to build for (default: {s})", .{@tagName(DuckDBVersion.default)})) orelse DuckDBVersion.default;
+    const duckdb_version = b.option(DuckDBVersion, "duckdb-version", b.fmt("DuckDB version to build for (default: {s})", .{@tagName(DuckDBVersion.latest)})) orelse DuckDBVersion.latest;
     const platforms = b.option([]const Platform, "platform", "DuckDB platform(s) to build for (default: all)") orelse std.enums.values(Platform);
     // HACK: Allow to override platform for GitHub Actions where linux_amd64_gcc4 is used
     const platform_suffix = b.option([]const u8, "platform-suffix", "Add suffix to platform name, e.g. gcc4");
@@ -75,7 +75,10 @@ pub fn build(b: *std.Build) !void {
         ext.install_name = b.fmt("@rpath/{s}", .{filename}); // macOS only
 
         const ext_path = path: {
-            const cmd = b.addSystemCommand(&.{ "uv", "run", metadata_script });
+            const metadata_script = b.dependency("extension_ci_tools", .{}).path("scripts/append_extension_metadata.py");
+
+            const cmd = b.addSystemCommand(&.{ "uv", "run" });
+            cmd.addFileArg(metadata_script);
             cmd.addArgs(&.{ "--extension-name", ext.name });
             cmd.addArgs(&.{ "--extension-version", ext_version });
             cmd.addArgs(&.{ "--duckdb-platform", platform_name });
@@ -84,6 +87,7 @@ pub fn build(b: *std.Build) !void {
             cmd.addArtifactArg(ext);
             cmd.addArg("--out-file");
             const path = cmd.addOutputFileArg(filename);
+
             cmd.step.name = b.fmt("add metadata {s}", .{platform_name});
             break :path path;
         };
@@ -109,8 +113,10 @@ pub fn build(b: *std.Build) !void {
 
         // Run tests on native platform
         if (b.host.result.os.tag == target.result.os.tag and b.host.result.cpu.arch == target.result.cpu.arch) {
-            const cmd = b.addSystemCommand(&.{ "uv", "run" });
-            cmd.addArgs(&.{ "--with", sqllogictest_repo });
+            const sqllogictest = b.lazyDependency("sqllogictest", .{}) orelse continue;
+
+            const cmd = b.addSystemCommand(&.{ "uv", "run", "--with" });
+            cmd.addFileArg(sqllogictest.path(""));
             cmd.addArgs(&.{ "--with", b.fmt("duckdb=={s}", .{@tagName(duckdb_version)}) });
             cmd.addArgs(&.{ "python3", "-m", "duckdb_sqllogictest" });
             cmd.addArgs(&.{ "--test-dir", "test" });
@@ -130,8 +136,3 @@ const cflags = [_][]const u8{
     "-Werror",
     "-fvisibility=hidden", // Avoid symbol clashes
 };
-
-// TODO: Switch to Python package once it's available
-const sqllogictest_repo = "git+https://github.com/duckdb/duckdb-sqllogictest-python@faf6f19";
-
-const metadata_script = "https://raw.githubusercontent.com/duckdb/extension-ci-tools/refs/heads/v1.1.3/scripts/append_extension_metadata.py";
