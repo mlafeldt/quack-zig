@@ -110,7 +110,6 @@ pub fn build(b: *std.Build) !void {
         // Run tests on native platform
         if (b.host.result.os.tag == target.result.os.tag and b.host.result.cpu.arch == target.result.cpu.arch) {
             const cmd = b.addSystemCommand(&.{ "uv", "run" });
-            cmd.addArg("--quiet");
             cmd.addArgs(&.{ "--with", sqllogictest_repo });
             cmd.addArgs(&.{ "--with", b.fmt("duckdb=={s}", .{@tagName(duckdb_version)}) });
             cmd.addArgs(&.{ "python3", "-m", "duckdb_sqllogictest" });
