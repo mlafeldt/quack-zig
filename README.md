@@ -80,7 +80,7 @@ Enter ".help" for usage hints.
 
 ## Advanced: Creating an Extension Repository
 
-By providing an installation prefix, you can easily create a [custom extension repository](https://duckdb.org/docs/extensions/working_with_extensions.html#creating-a-custom-repository).
+You can easily create your own [extension repository](https://duckdb.org/docs/extensions/working_with_extensions.html#creating-a-custom-repository) by providing a custom installation prefix.
 
 Here's an example:
 
@@ -88,25 +88,39 @@ Here's an example:
 zig build -Dduckdb-version=1.1.2 --prefix repo/v1.1.2 --release=fast
 
 zig build -Dduckdb-version=1.1.3 --prefix repo/v1.1.3 --release=fast
+
+gzip repo/*/*/*.duckdb_extension
 ```
 
 This will generate a repository with the following structure, ready to be uploaded to S3:
 
 ```
-❯ tree -d repo
+❯ tree repo
 repo
 ├── v1.1.2
 │   ├── linux_amd64
+│   │   └── quack.duckdb_extension.gz
 │   ├── linux_arm64
+│   │   └── quack.duckdb_extension.gz
 │   ├── osx_amd64
+│   │   └── quack.duckdb_extension.gz
 │   ├── osx_arm64
+│   │   └── quack.duckdb_extension.gz
 │   ├── windows_amd64
+│   │   └── quack.duckdb_extension.gz
 │   └── windows_arm64
+│       └── quack.duckdb_extension.gz
 └── v1.1.3
     ├── linux_amd64
+    │   └── quack.duckdb_extension.gz
     ├── linux_arm64
+    │   └── quack.duckdb_extension.gz
     ├── osx_amd64
+    │   └── quack.duckdb_extension.gz
     ├── osx_arm64
+    │   └── quack.duckdb_extension.gz
     ├── windows_amd64
+    │   └── quack.duckdb_extension.gz
     └── windows_arm64
+        └── quack.duckdb_extension.gz
 ```
