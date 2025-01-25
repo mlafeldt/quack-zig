@@ -23,5 +23,7 @@ jobs:
         with:
           version: "0.13.0"
       - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: false
       - run: zig build -Dduckdb-version=${{ matrix.duckdb_version }} -Dinstall-headers --verbose --summary new
       - run: zig build test -Dduckdb-version=${{ matrix.duckdb_version }} -Dplatform=linux_amd64_gcc4 --summary none
