@@ -1,5 +1,5 @@
-#include <duckdb_extension.h>  // Only available in DuckDB 1.1.2 and later
-#include <string.h>            // memcpy
+#include <duckdb_extension.h>
+#include <string.h>  // memcpy
 
 DUCKDB_EXTENSION_EXTERN
 

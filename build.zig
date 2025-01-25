@@ -2,7 +2,7 @@ const std = @import("std");
 const Build = std.Build;
 
 const DuckDBVersion = enum {
-    @"1.0.0",
+    @"1.0.0", // No C API support
     @"1.1.0",
     @"1.1.1",
     @"1.1.2",
@@ -62,9 +62,11 @@ pub fn build(b: *Build) void {
         break :v std.mem.trim(u8, git_describe, " \n\r");
     };
 
+    const duckdb_headers = b.dependency("duckdb_headers", .{}).path(@tagName(duckdb_version));
+    const metadata_script = b.dependency("extension_ci_tools", .{}).path("scripts/append_extension_metadata.py");
+
     for (platforms) |platform| {
         const target = platform.target(b);
-        const duckdb = b.lazyDependency(b.fmt("duckdb-{s}", .{@tagName(duckdb_version)}), .{}) orelse continue;
 
         const ext = b.addSharedLibrary(.{
             .name = "quack",
@@ -78,7 +80,7 @@ pub fn build(b: *Build) void {
             .root = b.path("src"),
             .flags = &cflags,
         });
-        ext.addIncludePath(duckdb.path(""));
+        ext.addIncludePath(duckdb_headers);
         ext.linkLibC();
         ext.root_module.addCMacro("DUCKDB_EXTENSION_NAME", ext.name);
         ext.root_module.addCMacro("DUCKDB_BUILD_LOADABLE_EXTENSION", "1");
@@ -87,8 +89,6 @@ pub fn build(b: *Build) void {
         ext.install_name = b.fmt("@rpath/{s}", .{filename}); // macOS only
 
         const ext_path = path: {
-            const metadata_script = b.dependency("extension_ci_tools", .{}).path("scripts/append_extension_metadata.py");
-
             const cmd = b.addSystemCommand(&.{ "uv", "run", "--python=3.12" });
             cmd.addFileArg(metadata_script);
             cmd.addArgs(&.{ "--extension-name", ext.name });
@@ -110,7 +110,7 @@ pub fn build(b: *Build) void {
 
         if (install_headers) {
             const header_dirs = [_]Build.LazyPath{
-                duckdb.path(""),
+                duckdb_headers,
                 // Add more header directories here
             };
             for (header_dirs) |dir| {
