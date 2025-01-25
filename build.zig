@@ -41,7 +41,7 @@ const Platform = enum {
     }
 };
 
-pub fn build(b: *Build) !void {
+pub fn build(b: *Build) void {
     const optimize = b.standardOptimizeOption(.{});
     const duckdb_version = b.option(DuckDBVersion, "duckdb-version", b.fmt("DuckDB version to build for (default: {s})", .{@tagName(DuckDBVersion.latest)})) orelse DuckDBVersion.latest;
     const platforms = b.option([]const Platform, "platform", "DuckDB platform(s) to build for (default: all)") orelse Platform.all;
@@ -89,7 +89,7 @@ pub fn build(b: *Build) !void {
         const ext_path = path: {
             const metadata_script = b.dependency("extension_ci_tools", .{}).path("scripts/append_extension_metadata.py");
 
-            const cmd = b.addSystemCommand(&.{ "uv", "run" });
+            const cmd = b.addSystemCommand(&.{ "uv", "run", "--python=3.12" });
             cmd.addFileArg(metadata_script);
             cmd.addArgs(&.{ "--extension-name", ext.name });
             cmd.addArgs(&.{ "--extension-version", ext_version });
@@ -127,7 +127,7 @@ pub fn build(b: *Build) !void {
         if (b.host.result.os.tag == target.result.os.tag and b.host.result.cpu.arch == target.result.cpu.arch) {
             const sqllogictest = b.lazyDependency("sqllogictest", .{}) orelse continue;
 
-            const cmd = b.addSystemCommand(&.{ "uv", "run", "--with" });
+            const cmd = b.addSystemCommand(&.{ "uv", "run", "--python=3.12", "--with" });
             cmd.addFileArg(sqllogictest.path(""));
             cmd.addArgs(&.{ "--with", b.fmt("duckdb=={s}", .{@tagName(duckdb_version)}) });
             cmd.addArgs(&.{ "python3", "-m", "duckdb_sqllogictest" });
