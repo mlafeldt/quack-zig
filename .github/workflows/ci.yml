@@ -10,7 +10,7 @@ on:
 jobs:
   build:
     name: Build - DuckDB ${{ matrix.duckdb_version }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     strategy:
       matrix:
