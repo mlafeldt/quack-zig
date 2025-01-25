@@ -9,6 +9,17 @@ const DuckDBVersion = enum {
     @"1.1.3",
 
     const latest: DuckDBVersion = .@"1.1.3";
+
+    fn headers(self: DuckDBVersion, b: *Build) ?Build.LazyPath {
+        return switch (self) {
+            .@"1.1.0",
+            .@"1.1.1",
+            .@"1.1.2",
+            .@"1.1.3",
+            => b.lazyDependency("libduckdb_1_1_3", .{}).?.path(""),
+            else => @panic("DuckDB version doesn't support C API"),
+        };
+    }
 };
 
 const Platform = enum {
@@ -62,7 +73,7 @@ pub fn build(b: *Build) void {
         break :v std.mem.trim(u8, git_describe, " \n\r");
     };
 
-    const duckdb_headers = b.dependency("duckdb_headers", .{}).path(@tagName(duckdb_version));
+    const duckdb_headers = duckdb_version.headers(b) orelse return;
     const metadata_script = b.dependency("extension_ci_tools", .{}).path("scripts/append_extension_metadata.py");
 
     for (platforms) |platform| {
