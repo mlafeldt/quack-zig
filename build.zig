@@ -1,4 +1,5 @@
 const std = @import("std");
+const Build = std.Build;
 
 const DuckDBVersion = enum {
     @"1.0.0",
@@ -12,19 +13,38 @@ const DuckDBVersion = enum {
 
 const Platform = enum {
     linux_amd64,
+    linux_amd64_gcc4,
     linux_arm64,
+    linux_arm64_gcc4,
     osx_amd64,
     osx_arm64,
     windows_amd64,
     windows_arm64,
+
+    const all = std.enums.values(Platform);
+
+    fn name(self: Platform) [:0]const u8 {
+        return @tagName(self);
+    }
+
+    fn target(self: Platform, b: *Build) Build.ResolvedTarget {
+        return b.resolveTargetQuery(switch (self) {
+            .linux_amd64 => .{ .os_tag = .linux, .cpu_arch = .x86_64, .abi = .gnu },
+            .linux_amd64_gcc4 => .{ .os_tag = .linux, .cpu_arch = .x86_64, .abi = .gnu }, // TODO: Set glibc_version?
+            .linux_arm64 => .{ .os_tag = .linux, .cpu_arch = .aarch64, .abi = .gnu },
+            .linux_arm64_gcc4 => .{ .os_tag = .linux, .cpu_arch = .aarch64, .abi = .gnu }, // TODO: Set glibc_version?
+            .osx_amd64 => .{ .os_tag = .macos, .cpu_arch = .x86_64, .abi = .none },
+            .osx_arm64 => .{ .os_tag = .macos, .cpu_arch = .aarch64, .abi = .none },
+            .windows_amd64 => .{ .os_tag = .windows, .cpu_arch = .x86_64, .abi = .gnu },
+            .windows_arm64 => .{ .os_tag = .windows, .cpu_arch = .aarch64, .abi = .gnu },
+        });
+    }
 };
 
-pub fn build(b: *std.Build) !void {
+pub fn build(b: *Build) !void {
     const optimize = b.standardOptimizeOption(.{});
     const duckdb_version = b.option(DuckDBVersion, "duckdb-version", b.fmt("DuckDB version to build for (default: {s})", .{@tagName(DuckDBVersion.latest)})) orelse DuckDBVersion.latest;
-    const platforms = b.option([]const Platform, "platform", "DuckDB platform(s) to build for (default: all)") orelse std.enums.values(Platform);
-    // HACK: Allow to override platform for GitHub Actions where linux_amd64_gcc4 is used
-    const platform_suffix = b.option([]const u8, "platform-suffix", "Add suffix to platform name, e.g. gcc4");
+    const platforms = b.option([]const Platform, "platform", "DuckDB platform(s) to build for (default: all)") orelse Platform.all;
     const install_headers = b.option(bool, "install-headers", "Install DuckDB C headers") orelse false;
 
     const ext_version = v: {
@@ -43,16 +63,7 @@ pub fn build(b: *std.Build) !void {
     };
 
     for (platforms) |platform| {
-        const target = b.resolveTargetQuery(switch (platform) {
-            .linux_amd64 => .{ .os_tag = .linux, .cpu_arch = .x86_64, .abi = .gnu },
-            .linux_arm64 => .{ .os_tag = .linux, .cpu_arch = .aarch64, .abi = .gnu },
-            .osx_amd64 => .{ .os_tag = .macos, .cpu_arch = .x86_64, .abi = .none },
-            .osx_arm64 => .{ .os_tag = .macos, .cpu_arch = .aarch64, .abi = .none },
-            .windows_amd64 => .{ .os_tag = .windows, .cpu_arch = .x86_64, .abi = .gnu },
-            .windows_arm64 => .{ .os_tag = .windows, .cpu_arch = .aarch64, .abi = .gnu },
-        });
-        const platform_name = if (platform_suffix) |suffix| b.fmt("{s}_{s}", .{ @tagName(platform), suffix }) else @tagName(platform);
-
+        const target = platform.target(b);
         const duckdb = b.lazyDependency(b.fmt("duckdb-{s}", .{@tagName(duckdb_version)}), .{}) orelse continue;
 
         const ext = b.addSharedLibrary(.{
@@ -82,23 +93,23 @@ pub fn build(b: *std.Build) !void {
             cmd.addFileArg(metadata_script);
             cmd.addArgs(&.{ "--extension-name", ext.name });
             cmd.addArgs(&.{ "--extension-version", ext_version });
-            cmd.addArgs(&.{ "--duckdb-platform", platform_name });
+            cmd.addArgs(&.{ "--duckdb-platform", platform.name() });
             cmd.addArgs(&.{ "--duckdb-version", "v0.0.1" }); // TODO: Set this based on the DuckDB version
             cmd.addArg("--library-file");
             cmd.addArtifactArg(ext);
             cmd.addArg("--out-file");
             const path = cmd.addOutputFileArg(filename);
 
-            cmd.step.name = b.fmt("add metadata {s}", .{platform_name});
+            cmd.step.name = b.fmt("add metadata {s}", .{platform.name()});
             break :path path;
         };
 
-        const install_file = b.addInstallFileWithDir(ext_path, .{ .custom = platform_name }, filename);
-        install_file.step.name = b.fmt("install {s}/{s}", .{ platform_name, filename });
+        const install_file = b.addInstallFileWithDir(ext_path, .{ .custom = platform.name() }, filename);
+        install_file.step.name = b.fmt("install {s}/{s}", .{ platform.name(), filename });
         b.getInstallStep().dependOn(&install_file.step);
 
         if (install_headers) {
-            const header_dirs = [_]std.Build.LazyPath{
+            const header_dirs = [_]Build.LazyPath{
                 duckdb.path(""),
                 // Add more header directories here
             };
@@ -127,6 +138,7 @@ pub fn build(b: *std.Build) !void {
 
             const test_step = b.step("test", "Run SQL logic tests");
             test_step.dependOn(&cmd.step);
+            break;
         }
     }
 }
