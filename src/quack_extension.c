@@ -3,8 +3,14 @@
 
 DUCKDB_EXTENSION_EXTERN
 
-// Fix DUCKDB_EXTENSION_ENTRYPOINT to work in C
-typedef const struct duckdb_extension_access duckdb_extension_access;
+// Workaround for missing struct tag in DUCKDB_EXTENSION_ENTRYPOINT (DuckDB 1.1.x)
+typedef struct duckdb_extension_access duckdb_extension_access;
+
+#if DUCKDB_EXTENSION_API_VERSION_MAJOR >= 1
+#define EXTENSION_RETURN(result) return (result)
+#else
+#define EXTENSION_RETURN(result) return
+#endif
 
 #define QUACK_PREFIX "Quack "
 #define QUACK_SUFFIX " 🐥"
@@ -61,9 +67,9 @@ DUCKDB_EXTENSION_ENTRYPOINT(duckdb_connection conn, duckdb_extension_info info, 
 
     if (duckdb_register_scalar_function(conn, func) == DuckDBError) {
         access->set_error(info, "Failed to register scalar function");
-        duckdb_disconnect(&conn);
-        return;
+        EXTENSION_RETURN(false);
     }
 
     duckdb_destroy_scalar_function(&func);
+    EXTENSION_RETURN(true);
 }

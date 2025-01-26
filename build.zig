@@ -2,22 +2,25 @@ const std = @import("std");
 const Build = std.Build;
 
 const DuckDBVersion = enum {
-    @"1.0.0", // No C API support
-    @"1.1.0",
+    @"1.1.0", // First version with C API support
     @"1.1.1",
     @"1.1.2",
     @"1.1.3",
+    @"1.2.0",
 
-    const latest: DuckDBVersion = .@"1.1.3";
+    const latest: DuckDBVersion = .@"1.2.0";
 
     fn headers(self: DuckDBVersion, b: *Build) ?Build.LazyPath {
         return switch (self) {
-            .@"1.1.0",
-            .@"1.1.1",
-            .@"1.1.2",
-            .@"1.1.3",
-            => b.lazyDependency("libduckdb_1_1_3", .{}).?.path(""),
-            else => @panic("DuckDB version doesn't support C API"),
+            .@"1.1.0", .@"1.1.1", .@"1.1.2", .@"1.1.3" => if (b.lazyDependency("libduckdb_1_1_3", .{})) |dep| dep.path("") else null,
+            .@"1.2.0" => if (b.lazyDependency("libduckdb_headers", .{})) |dep| dep.path("1.2.0") else null,
+        };
+    }
+
+    fn extensionAPIVersion(self: DuckDBVersion) [:0]const u8 {
+        return switch (self) {
+            .@"1.1.0", .@"1.1.1", .@"1.1.2", .@"1.1.3" => "v0.0.1",
+            .@"1.2.0" => "v1.2.0",
         };
     }
 };
@@ -105,7 +108,7 @@ pub fn build(b: *Build) void {
             cmd.addArgs(&.{ "--extension-name", ext.name });
             cmd.addArgs(&.{ "--extension-version", ext_version });
             cmd.addArgs(&.{ "--duckdb-platform", platform.name() });
-            cmd.addArgs(&.{ "--duckdb-version", "v0.0.1" }); // TODO: Set this based on the DuckDB version
+            cmd.addArgs(&.{ "--duckdb-version", duckdb_version.extensionAPIVersion() });
             cmd.addArg("--library-file");
             cmd.addArtifactArg(ext);
             cmd.addArg("--out-file");
