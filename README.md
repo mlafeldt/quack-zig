@@ -141,3 +141,9 @@ repo
     └── windows_arm64
         └── quack.duckdb_extension.gz
 ```
+
+## License
+
+Licensed under the [MIT License](LICENSE).
+
+Feel free to use this code as a starting point for your own DuckDB extensions.
