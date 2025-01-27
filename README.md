@@ -2,6 +2,8 @@
 
 The infamous [DuckDB quack extension](https://duckdb.org/community_extensions/extensions/quack.html) rewritten in C and built with Zig.
 
+Proof that you can develop DuckDB extensions without drowning in boilerplate.
+
 ## Building the Extension
 
 Install [Zig](https://ziglang.org) and [uv](https://docs.astral.sh/uv/). That's it. No other dependencies are required.
@@ -146,4 +148,4 @@ repo
 
 Licensed under the [MIT License](LICENSE).
 
-Feel free to use this code as a starting point for your own DuckDB extensions.
+Feel free to use this code as a starting point for your own DuckDB extensions. 🐤
