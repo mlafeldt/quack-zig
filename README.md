@@ -6,7 +6,7 @@ The infamous [DuckDB quack extension](https://duckdb.org/community_extensions/ex
 
 Install [Zig](https://ziglang.org) and [uv](https://docs.astral.sh/uv/). That's it. No other dependencies are required.
 
-Now experience the power of the [Zig Build System](https://ziglang.org/learn/build-system/) with these commands:
+Now experience the power and simplicity of the [Zig Build System](https://ziglang.org/learn/build-system/) with these commands:
 
 ```
 # Build extension for all platforms (Linux, macOS, Windows)
@@ -27,7 +27,7 @@ zig build --release=fast
 # Optimize for binary size
 zig build --release=small
 
-# Also install DuckDB headers for development
+# Also install DuckDB C headers for development (to zig-out/include by default)
 zig build -Dinstall-headers
 ```
 
@@ -38,7 +38,11 @@ The build output will look like this:
 zig-out
 ├── linux_amd64
 │   └── quack.duckdb_extension
+├── linux_amd64_gcc4
+│   └── quack.duckdb_extension
 ├── linux_arm64
+│   └── quack.duckdb_extension
+├── linux_arm64_gcc4
 │   └── quack.duckdb_extension
 ├── osx_amd64
 │   └── quack.duckdb_extension
@@ -85,9 +89,12 @@ You can easily create your own [extension repository](https://duckdb.org/docs/ex
 Here's an example:
 
 ```
-zig build -Dduckdb-version=1.1.2 --prefix repo/v1.1.2 --release=fast
+rm -rf repo
 
-zig build -Dduckdb-version=1.1.3 --prefix repo/v1.1.3 --release=fast
+# Add more versions as needed
+for version in 1.1.3 1.2.0; do
+    zig build -Dduckdb-version=${version} --prefix repo/v${version} --release=fast
+done
 
 gzip repo/*/*/*.duckdb_extension
 ```
@@ -97,10 +104,14 @@ This will generate a repository with the following structure, ready to be upload
 ```
 ❯ tree repo
 repo
-├── v1.1.2
+├── v1.1.3
 │   ├── linux_amd64
 │   │   └── quack.duckdb_extension.gz
+│   ├── linux_amd64_gcc4
+│   │   └── quack.duckdb_extension.gz
 │   ├── linux_arm64
+│   │   └── quack.duckdb_extension.gz
+│   ├── linux_arm64_gcc4
 │   │   └── quack.duckdb_extension.gz
 │   ├── osx_amd64
 │   │   └── quack.duckdb_extension.gz
@@ -110,10 +121,14 @@ repo
 │   │   └── quack.duckdb_extension.gz
 │   └── windows_arm64
 │       └── quack.duckdb_extension.gz
-└── v1.1.3
+└── v1.2.0
     ├── linux_amd64
     │   └── quack.duckdb_extension.gz
+    ├── linux_amd64_gcc4
+    │   └── quack.duckdb_extension.gz
     ├── linux_arm64
+    │   └── quack.duckdb_extension.gz
+    ├── linux_arm64_gcc4
     │   └── quack.duckdb_extension.gz
     ├── osx_amd64
     │   └── quack.duckdb_extension.gz
