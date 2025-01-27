@@ -26,8 +26,8 @@ const DuckDBVersion = enum {
 };
 
 const Platform = enum {
-    linux_amd64,
-    linux_amd64_gcc4,
+    linux_amd64, // Node.js packages, etc.
+    linux_amd64_gcc4, // Python packages, CLI, etc.
     linux_arm64,
     linux_arm64_gcc4,
     osx_amd64,
@@ -138,7 +138,10 @@ pub fn build(b: *Build) void {
         }
 
         // Run tests on native platform
-        if (b.host.result.os.tag == target.result.os.tag and b.host.result.cpu.arch == target.result.cpu.arch) {
+        if (b.host.result.os.tag == target.result.os.tag and
+            b.host.result.cpu.arch == target.result.cpu.arch and
+            !b.top_level_steps.contains("test")) // HACK: Avoid adding step twice, e.g. for linux_amd64 and linux_amd64_gcc4
+        {
             const sqllogictest = b.lazyDependency("sqllogictest", .{}) orelse continue;
 
             const cmd = b.addSystemCommand(&.{ "uv", "run", "--python=3.12", "--with" });
@@ -152,7 +155,6 @@ pub fn build(b: *Build) void {
 
             const test_step = b.step("test", "Run SQL logic tests");
             test_step.dependOn(&cmd.step);
-            break;
         }
     }
 }
