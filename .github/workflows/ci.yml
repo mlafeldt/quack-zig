@@ -31,4 +31,4 @@ jobs:
       - run: zig build -Dduckdb-version=${{ matrix.duckdb_version }} -Dinstall-headers --verbose --summary new
       - run: tree -ash zig-out
       - run: zig build test -Dduckdb-version=${{ matrix.duckdb_version }} -Dplatform=linux_amd64_gcc4 --summary none
-        if: ${{ matrix.duckdb_version != '1.2.0' }}
+        if: ${{ matrix.duckdb_version != '1.2.0' }} # TODO: Remove once Python package is available

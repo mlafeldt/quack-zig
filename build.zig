@@ -8,7 +8,7 @@ const DuckDBVersion = enum {
     @"1.1.3",
     @"1.2.0",
 
-    const latest: DuckDBVersion = .@"1.2.0";
+    const default: DuckDBVersion = .@"1.1.3";
 
     fn headers(self: DuckDBVersion, b: *Build) ?Build.LazyPath {
         return switch (self) {
@@ -57,7 +57,7 @@ const Platform = enum {
 
 pub fn build(b: *Build) void {
     const optimize = b.standardOptimizeOption(.{});
-    const duckdb_version = b.option(DuckDBVersion, "duckdb-version", b.fmt("DuckDB version to build for (default: {s})", .{@tagName(DuckDBVersion.latest)})) orelse DuckDBVersion.latest;
+    const duckdb_version = b.option(DuckDBVersion, "duckdb-version", b.fmt("DuckDB version to build for (default: {s})", .{@tagName(DuckDBVersion.default)})) orelse DuckDBVersion.default;
     const platforms = b.option([]const Platform, "platform", "DuckDB platform(s) to build for (default: all)") orelse Platform.all;
     const install_headers = b.option(bool, "install-headers", "Install DuckDB C headers") orelse false;
 

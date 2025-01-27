@@ -66,6 +66,8 @@ Run the [SQL logic tests](https://duckdb.org/docs/dev/sqllogictest/intro.html) w
 SUCCESS
 ```
 
+_Note: Testing is currently broken for DuckDB 1.2.0 as the duckdb Python package is not yet available._
+
 ## Using the Extension
 
 ```
