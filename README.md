@@ -68,6 +68,8 @@ Run the [SQL logic tests](https://duckdb.org/docs/dev/sqllogictest/intro.html) w
 SUCCESS
 ```
 
+You can also pass `-Dduckdb-version` to test against a specific DuckDB version, or use `-Dplatform` to select a different native platform, e.g. `linux_amd64_gcc4` instead of `linux_amd64`.
+
 _Note: Testing is currently broken for DuckDB 1.2.0 as the duckdb Python package is not yet available._
 
 ## Using the Extension
