@@ -9,17 +9,9 @@ on:
 
 jobs:
   build:
-    name: Build - DuckDB ${{ matrix.duckdb_version }}
+    name: Build and test
     runs-on: ubuntu-24.04
     timeout-minutes: 10
-    strategy:
-      matrix:
-        duckdb_version:
-          - "1.1.0"
-          - "1.1.1"
-          - "1.1.2"
-          - "1.1.3"
-          - "1.2.0"
     steps:
       - uses: actions/checkout@v4
       - uses: mlugg/setup-zig@v1
@@ -28,7 +20,6 @@ jobs:
       - uses: astral-sh/setup-uv@v5
         with:
           enable-cache: false
-      - run: zig build -Dduckdb-version=${{ matrix.duckdb_version }} -Dinstall-headers --verbose --summary new
+      - run: zig build -Dinstall-headers --verbose --summary new
+      - run: zig build test -Dplatform=linux_amd64_gcc4 --summary new
       - run: tree -ash zig-out
-      - run: zig build test -Dduckdb-version=${{ matrix.duckdb_version }} -Dplatform=linux_amd64_gcc4 --summary none
-        if: ${{ matrix.duckdb_version != '1.2.0' }} # TODO: Remove once Python package is available
