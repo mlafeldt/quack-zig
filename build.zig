@@ -64,6 +64,11 @@ pub fn build(b: *Build) void {
     const duckdb_versions = b.option([]const DuckDBVersion, "duckdb-version", "DuckDB version(s) to build for (default: all)") orelse DuckDBVersion.all;
     const platforms = b.option([]const Platform, "platform", "DuckDB platform(s) to build for (default: all)") orelse Platform.all;
     const install_headers = b.option(bool, "install-headers", "Install DuckDB C headers") orelse false;
+    const flat = b.option(bool, "flat", "Install files without DuckDB version prefix") orelse false;
+
+    if (flat and duckdb_versions.len > 1) {
+        std.zig.fatal("-Dflat requires passing a specific DuckDB version", .{});
+    }
 
     const test_step = b.step("test", "Run SQL logic tests");
 
@@ -129,7 +134,7 @@ pub fn build(b: *Build) void {
             };
 
             const install_file = b.addInstallFileWithDir(ext_path, .{
-                .custom = b.fmt("{s}/{s}", .{ version_string, platform_string }),
+                .custom = if (flat) platform_string else b.fmt("{s}/{s}", .{ version_string, platform_string }),
             }, filename);
             install_file.step.name = b.fmt("install {s} {s}", .{ version_string, platform_string });
             b.getInstallStep().dependOn(&install_file.step);
@@ -143,8 +148,8 @@ pub fn build(b: *Build) void {
                     b.getInstallStep().dependOn(&b.addInstallDirectory(.{
                         .source_dir = dir,
                         .include_extensions = &.{"h"},
-                        .install_dir = .{ .custom = version_string },
-                        .install_subdir = "include",
+                        .install_dir = if (flat) .header else .{ .custom = b.fmt("{s}/include", .{version_string}) },
+                        .install_subdir = "",
                     }).step);
                 }
             }
