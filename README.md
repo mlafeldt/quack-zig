@@ -1,4 +1,4 @@
-# What the Duck? It's Zig!
+# What the Duck? It's Zig! ⚡️
 
 The infamous [DuckDB quack extension](https://duckdb.org/community_extensions/extensions/quack.html) rewritten in C and built with Zig.
 
