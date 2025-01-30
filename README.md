@@ -10,18 +10,18 @@ Install [Zig](https://ziglang.org) and [uv](https://docs.astral.sh/uv/). That's 
 
 Now experience the power and simplicity of the [Zig Build System](https://ziglang.org/learn/build-system/) with these commands:
 
-```
-# Build extension for all platforms (Linux, macOS, Windows)
+```shell
+# Build the extension for all supported DuckDB versions and platforms (Linux, macOS, Windows)
 zig build
 
-# Only build for a specific platform
-zig build -Dplatform=linux_amd64
+# Build for a list of DuckDB versions
+zig build -Dduckdb-version=1.1.3 -Dduckdb-version=1.2.0
 
-# Build for multiple platforms
+# Build for a list of platforms
 zig build -Dplatform=linux_arm64 -Dplatform=osx_arm64 -Dplatform=windows_arm64
 
-# Build for a specific DuckDB version
-zig build -Dduckdb-version=1.1.2
+# Build for a specific DuckDB version and platform
+zig build -Dduckdb-version=1.1.3 -Dplatform=linux_amd64
 
 # Optimize for performance
 zig build --release=fast
@@ -29,31 +29,50 @@ zig build --release=fast
 # Optimize for binary size
 zig build --release=small
 
-# Also install DuckDB C headers for development (to zig-out/include by default)
+# Also install DuckDB C headers for development
 zig build -Dinstall-headers
 ```
 
-The build output will look like this:
+The build output in `zig-out` will look like this:
 
 ```
 ❯ tree zig-out
 zig-out
-├── linux_amd64
-│   └── quack.duckdb_extension
-├── linux_amd64_gcc4
-│   └── quack.duckdb_extension
-├── linux_arm64
-│   └── quack.duckdb_extension
-├── linux_arm64_gcc4
-│   └── quack.duckdb_extension
-├── osx_amd64
-│   └── quack.duckdb_extension
-├── osx_arm64
-│   └── quack.duckdb_extension
-├── windows_amd64
-│   └── quack.duckdb_extension
-└── windows_arm64
-    └── quack.duckdb_extension
+├── v1.1.0
+│   ├── linux_amd64
+│   │   └── quack.duckdb_extension
+│   ├── linux_amd64_gcc4
+│   │   └── quack.duckdb_extension
+│   ├── linux_arm64
+│   │   └── quack.duckdb_extension
+│   ├── linux_arm64_gcc4
+│   │   └── quack.duckdb_extension
+│   ├── osx_amd64
+│   │   └── quack.duckdb_extension
+│   ├── osx_arm64
+│   │   └── quack.duckdb_extension
+│   ├── windows_amd64
+│   │   └── quack.duckdb_extension
+│   └── windows_arm64
+│       └── quack.duckdb_extension
+├── v1.1.1
+│   ├── linux_amd64
+│   │   └── quack.duckdb_extension
+│   ├── linux_amd64_gcc4
+│   │   └── quack.duckdb_extension
+│   ├── linux_arm64
+│   │   └── quack.duckdb_extension
+│   ├── linux_arm64_gcc4
+│   │   └── quack.duckdb_extension
+│   ├── osx_amd64
+│   │   └── quack.duckdb_extension
+│   ├── osx_arm64
+│   │   └── quack.duckdb_extension
+│   ├── windows_amd64
+│   │   └── quack.duckdb_extension
+│   └── windows_arm64
+│       └── quack.duckdb_extension
+├── ...
 ```
 
 See `zig build --help` for more options.
@@ -63,14 +82,26 @@ See `zig build --help` for more options.
 Run the [SQL logic tests](https://duckdb.org/docs/dev/sqllogictest/intro.html) with `zig build test`.
 
 ```
-❯ zig build test
+❯ zig build test --summary new
 [0/1] test/sql/quack.test
 SUCCESS
+[0/1] test/sql/quack.test
+SUCCESS
+[0/1] test/sql/quack.test
+SUCCESS
+[0/1] test/sql/quack.test
+SUCCESS
+Build Summary: 13/13 steps succeeded
+test success
+├─ sqllogictest v1.1.0 osx_arm64 success 95ms MaxRSS:45M
+├─ sqllogictest v1.1.1 osx_arm64 success 104ms MaxRSS:45M
+├─ sqllogictest v1.1.2 osx_arm64 success 94ms MaxRSS:43M
+└─ sqllogictest v1.1.3 osx_arm64 success 94ms MaxRSS:44M
 ```
 
 You can also pass `-Dduckdb-version` to test against a specific DuckDB version, or use `-Dplatform` to select a different native platform, e.g. `linux_amd64_gcc4` instead of `linux_amd64`.
 
-_Note: Testing is currently broken for DuckDB 1.2.0 as the duckdb Python package is not yet available._
+_Note: Testing is currently skipped for DuckDB 1.2.0 as the duckdb Python package is not yet available._
 
 ## Using the Extension
 
@@ -78,7 +109,7 @@ _Note: Testing is currently broken for DuckDB 1.2.0 as the duckdb Python package
 ❯ duckdb -unsigned
 v1.1.3 19864453f7
 Enter ".help" for usage hints.
-🟡◗ LOAD 'zig-out/osx_arm64/quack.duckdb_extension';
+🟡◗ LOAD 'zig-out/v1.1.3/osx_arm64/quack.duckdb_extension';
 🟡◗ SELECT quack('Zig');
 ┌──────────────┐
 │ quack('Zig') │
@@ -88,63 +119,19 @@ Enter ".help" for usage hints.
 └──────────────┘
 ```
 
-## Advanced: Creating an Extension Repository
+## Creating an Extension Repository
 
-You can easily create your own [extension repository](https://duckdb.org/docs/extensions/working_with_extensions.html#creating-a-custom-repository) by providing a custom installation prefix.
+You can easily create your own [extension repository](https://duckdb.org/docs/extensions/working_with_extensions.html#creating-a-custom-repository). In fact, `zig build` already does this for you by default! However, you might also want to write files to a different directory and compress them. Here's how:
 
-Here's an example:
-
-```
+```shell
 rm -rf repo
 
-# Add more versions as needed
-for version in 1.1.3 1.2.0; do
-    zig build -Dduckdb-version=${version} --prefix repo/v${version} --release=fast
-done
+zig build --prefix repo --release=fast
 
 gzip repo/*/*/*.duckdb_extension
 ```
 
-This will generate a repository with the following structure, ready to be uploaded to S3:
-
-```
-❯ tree repo
-repo
-├── v1.1.3
-│   ├── linux_amd64
-│   │   └── quack.duckdb_extension.gz
-│   ├── linux_amd64_gcc4
-│   │   └── quack.duckdb_extension.gz
-│   ├── linux_arm64
-│   │   └── quack.duckdb_extension.gz
-│   ├── linux_arm64_gcc4
-│   │   └── quack.duckdb_extension.gz
-│   ├── osx_amd64
-│   │   └── quack.duckdb_extension.gz
-│   ├── osx_arm64
-│   │   └── quack.duckdb_extension.gz
-│   ├── windows_amd64
-│   │   └── quack.duckdb_extension.gz
-│   └── windows_arm64
-│       └── quack.duckdb_extension.gz
-└── v1.2.0
-    ├── linux_amd64
-    │   └── quack.duckdb_extension.gz
-    ├── linux_amd64_gcc4
-    │   └── quack.duckdb_extension.gz
-    ├── linux_arm64
-    │   └── quack.duckdb_extension.gz
-    ├── linux_arm64_gcc4
-    │   └── quack.duckdb_extension.gz
-    ├── osx_amd64
-    │   └── quack.duckdb_extension.gz
-    ├── osx_arm64
-    │   └── quack.duckdb_extension.gz
-    ├── windows_amd64
-    │   └── quack.duckdb_extension.gz
-    └── windows_arm64
-        └── quack.duckdb_extension.gz
-```
+This will generate a repository that is ready to be uploaded to S3 with a tool like [rclone](https://rclone.org).
 
 ## License
 
