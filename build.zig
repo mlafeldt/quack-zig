@@ -14,10 +14,10 @@ const DuckDBVersion = enum {
         return b.fmt("v{s}", .{@tagName(self)});
     }
 
-    fn headers(self: DuckDBVersion, b: *Build) ?Build.LazyPath {
+    fn headers(self: DuckDBVersion, b: *Build) Build.LazyPath {
         return switch (self) {
-            .@"1.1.0", .@"1.1.1", .@"1.1.2", .@"1.1.3" => if (b.lazyDependency("libduckdb_1_1_3", .{})) |dep| dep.path("") else null,
-            .@"1.2.0" => if (b.lazyDependency("libduckdb_headers", .{})) |dep| dep.path("1.2.0") else null,
+            .@"1.1.0", .@"1.1.1", .@"1.1.2", .@"1.1.3" => b.dependency("libduckdb_1_1_3", .{}).path(""),
+            .@"1.2.0" => b.dependency("libduckdb_headers", .{}).path("1.2.0"),
         };
     }
 
@@ -88,10 +88,11 @@ pub fn build(b: *Build) void {
     };
 
     const metadata_script = b.dependency("extension_ci_tools", .{}).path("scripts/append_extension_metadata.py");
+    const sqllogictest = b.dependency("sqllogictest", .{}).path("");
 
     for (duckdb_versions) |duckdb_version| {
         const version_string = duckdb_version.string(b);
-        const duckdb_headers = duckdb_version.headers(b) orelse continue;
+        const duckdb_headers = duckdb_version.headers(b);
 
         for (platforms) |platform| {
             const platform_string = platform.string();
@@ -159,10 +160,8 @@ pub fn build(b: *Build) void {
                 b.host.result.cpu.arch == target.result.cpu.arch and
                 duckdb_version != .@"1.2.0") // TODO: Remove once Python package is available
             {
-                const sqllogictest = b.lazyDependency("sqllogictest", .{}) orelse continue;
-
                 const cmd = b.addSystemCommand(&.{ "uv", "run", "--python=3.12", "--with" });
-                cmd.addFileArg(sqllogictest.path(""));
+                cmd.addFileArg(sqllogictest);
                 cmd.addArgs(&.{ "--with", b.fmt("duckdb=={s}", .{@tagName(duckdb_version)}) });
                 cmd.addArgs(&.{ "python3", "-m", "duckdb_sqllogictest" });
                 cmd.addArgs(&.{ "--test-dir", "test" });
