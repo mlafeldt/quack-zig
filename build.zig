@@ -156,8 +156,8 @@ pub fn build(b: *Build) void {
             }
 
             // Run tests on native platform
-            if (b.host.result.os.tag == target.result.os.tag and
-                b.host.result.cpu.arch == target.result.cpu.arch and
+            if (b.graph.host.result.os.tag == target.result.os.tag and
+                b.graph.host.result.cpu.arch == target.result.cpu.arch and
                 duckdb_version != .@"1.2.0") // TODO: Remove once Python package is available
             {
                 const cmd = b.addSystemCommand(&.{ "uv", "run", "--python=3.12", "--with" });
