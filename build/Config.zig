@@ -79,7 +79,7 @@ pub fn init(b: *std.Build, ext_name: []const u8) !Config {
         std.zig.fatal("-Dflat requires passing a specific DuckDB version", .{});
     }
 
-    return Config{
+    return .{
         .ext_name = ext_name,
         .optimize = optimize,
         .duckdb_versions = duckdb_versions,
