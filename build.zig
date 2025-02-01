@@ -3,7 +3,9 @@ const Build = std.Build;
 const buildpkg = @import("build/main.zig");
 
 pub fn build(b: *Build) !void {
-    const config = buildpkg.Config.init(b, "quack");
+    const config = try buildpkg.Config.init(b, "quack");
+    std.log.debug("{any}", .{config});
 
-    std.log.info("{any}", .{config});
+    const libduckdb = try buildpkg.Libduckdb.init(b, &config);
+    std.log.debug("{any}", .{libduckdb});
 }
