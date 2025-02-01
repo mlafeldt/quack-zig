@@ -1,5 +1,6 @@
 const std = @import("std");
 const Build = std.Build;
+const DuckDB = @This();
 
 pub const Version = enum {
     @"1.1.0", // First version with C API support
@@ -59,16 +60,46 @@ pub const Platform = enum {
     }
 };
 
-pub const Options = struct {
-    ext_name: []const u8,
-    optimize: std.builtin.OptimizeMode = .Debug,
-    duckdb_versions: []const Version = Version.all,
-    platforms: []const Platform = Platform.all,
-    install_headers: bool = false,
-    flat: bool = false,
-};
+ext_name: []const u8,
+optimize: std.builtin.OptimizeMode,
+duckdb_versions: []const Version,
+platforms: []const Platform,
+install_headers: bool,
+flat: bool,
 
-pub fn buildExtension(b: *Build, opts: Options) !void {
+// pub const Options = struct {
+//     ext_name: []const u8,
+//     optimize: std.builtin.OptimizeMode = .Debug,
+//     duckdb_versions: []const Version = Version.all,
+//     platforms: []const Platform = Platform.all,
+//     install_headers: bool = false,
+//     flat: bool = false,
+// };
+
+pub fn init(owner: *Build, ext_name: []const u8) *DuckDB {
+    const optimize = owner.standardOptimizeOption(.{});
+    const duckdb_versions = owner.option([]const DuckDB.Version, "duckdb-version", "DuckDB version(s) to build for (default: all)") orelse Version.all;
+    const platforms = owner.option([]const DuckDB.Platform, "platform", "DuckDB platform(s) to build for (default: all)") orelse Platform.all;
+    const install_headers = owner.option(bool, "install-headers", "Install DuckDB C headers") orelse false;
+    const flat = owner.option(bool, "flat", "Install files without DuckDB version prefix") orelse false;
+
+    if (flat and duckdb_versions.len > 1) {
+        std.zig.fatal("-Dflat requires passing a specific DuckDB version", .{});
+    }
+
+    const duckdb = owner.allocator.create(DuckDB) catch @panic("OOM");
+    duckdb.* = .{
+        .ext_name = ext_name,
+        .optimize = optimize,
+        .duckdb_versions = duckdb_versions,
+        .platforms = platforms,
+        .install_headers = install_headers,
+        .flat = flat,
+    };
+    return duckdb;
+}
+
+pub fn buildExtension(self: *DuckDB, b: *Build) !void {
     const test_step = b.step("test", "Run SQL logic tests");
 
     const ext_version = v: {
@@ -89,18 +120,18 @@ pub fn buildExtension(b: *Build, opts: Options) !void {
     const metadata_script = b.dependency("extension_ci_tools", .{}).path("scripts/append_extension_metadata.py");
     const sqllogictest = b.dependency("sqllogictest", .{}).path("");
 
-    for (opts.duckdb_versions) |duckdb_version| {
+    for (self.duckdb_versions) |duckdb_version| {
         const version_string = duckdb_version.string(b);
         const duckdb_headers = duckdb_version.headers(b);
 
-        for (opts.platforms) |platform| {
+        for (self.platforms) |platform| {
             const platform_string = platform.string();
             const target = platform.target(b);
 
             const ext = b.addSharedLibrary(.{
-                .name = opts.ext_name,
+                .name = self.ext_name,
                 .target = target,
-                .optimize = opts.optimize,
+                .optimize = self.optimize,
             });
             ext.addCSourceFiles(.{
                 .files = &.{
@@ -111,16 +142,16 @@ pub fn buildExtension(b: *Build, opts: Options) !void {
             });
             ext.addIncludePath(duckdb_headers);
             ext.linkLibC();
-            ext.root_module.addCMacro("DUCKDB_EXTENSION_NAME", opts.ext_name);
+            ext.root_module.addCMacro("DUCKDB_EXTENSION_NAME", self.ext_name);
             ext.root_module.addCMacro("DUCKDB_BUILD_LOADABLE_EXTENSION", "1");
 
-            const filename = b.fmt("{s}.duckdb_extension", .{opts.ext_name});
+            const filename = b.fmt("{s}.duckdb_extension", .{self.ext_name});
             ext.install_name = b.fmt("@rpath/{s}", .{filename}); // macOS only
 
             const ext_path = path: {
                 const cmd = b.addSystemCommand(&.{ "uv", "run", "--python=3.12" });
                 cmd.addFileArg(metadata_script);
-                cmd.addArgs(&.{ "--extension-name", opts.ext_name });
+                cmd.addArgs(&.{ "--extension-name", self.ext_name });
                 cmd.addArgs(&.{ "--extension-version", ext_version });
                 cmd.addArgs(&.{ "--duckdb-platform", platform_string });
                 cmd.addArgs(&.{ "--duckdb-version", duckdb_version.extensionAPIVersion() });
@@ -134,12 +165,12 @@ pub fn buildExtension(b: *Build, opts: Options) !void {
             };
 
             const install_file = b.addInstallFileWithDir(ext_path, .{
-                .custom = if (opts.flat) platform_string else b.fmt("{s}/{s}", .{ version_string, platform_string }),
+                .custom = if (self.flat) platform_string else b.fmt("{s}/{s}", .{ version_string, platform_string }),
             }, filename);
             install_file.step.name = b.fmt("install {s} {s}", .{ version_string, platform_string });
             b.getInstallStep().dependOn(&install_file.step);
 
-            if (opts.install_headers) {
+            if (self.install_headers) {
                 const header_dirs = [_]Build.LazyPath{
                     duckdb_headers,
                     // Add more header directories here
@@ -148,7 +179,7 @@ pub fn buildExtension(b: *Build, opts: Options) !void {
                     b.getInstallStep().dependOn(&b.addInstallDirectory(.{
                         .source_dir = dir,
                         .include_extensions = &.{"h"},
-                        .install_dir = if (opts.flat) .header else .{ .custom = b.fmt("{s}/include", .{version_string}) },
+                        .install_dir = if (self.flat) .header else .{ .custom = b.fmt("{s}/include", .{version_string}) },
                         .install_subdir = "",
                     }).step);
                 }
