@@ -8,20 +8,20 @@ const DuckDBVersion = enum {
     @"1.1.3",
     @"1.2.0",
 
-    const all = std.enums.values(DuckDBVersion);
+    const all = std.enums.values(@This());
 
-    fn string(self: DuckDBVersion, b: *Build) []const u8 {
+    fn string(self: @This(), b: *Build) []const u8 {
         return b.fmt("v{s}", .{@tagName(self)});
     }
 
-    fn headers(self: DuckDBVersion, b: *Build) Build.LazyPath {
+    fn headers(self: @This(), b: *Build) Build.LazyPath {
         return switch (self) {
             .@"1.1.0", .@"1.1.1", .@"1.1.2", .@"1.1.3" => b.dependency("libduckdb_1_1_3", .{}).path(""),
             .@"1.2.0" => b.dependency("libduckdb_headers", .{}).path("1.2.0"),
         };
     }
 
-    fn extensionAPIVersion(self: DuckDBVersion) [:0]const u8 {
+    fn extensionAPIVersion(self: @This()) [:0]const u8 {
         return switch (self) {
             .@"1.1.0", .@"1.1.1", .@"1.1.2", .@"1.1.3" => "v0.0.1",
             .@"1.2.0" => "v1.2.0",
@@ -39,13 +39,13 @@ const Platform = enum {
     windows_amd64,
     windows_arm64,
 
-    const all = std.enums.values(Platform);
+    const all = std.enums.values(@This());
 
-    fn string(self: Platform) [:0]const u8 {
+    fn string(self: @This()) [:0]const u8 {
         return @tagName(self);
     }
 
-    fn target(self: Platform, b: *Build) Build.ResolvedTarget {
+    fn target(self: @This(), b: *Build) Build.ResolvedTarget {
         return b.resolveTargetQuery(switch (self) {
             .linux_amd64 => .{ .os_tag = .linux, .cpu_arch = .x86_64, .abi = .gnu },
             .linux_amd64_gcc4 => .{ .os_tag = .linux, .cpu_arch = .x86_64, .abi = .gnu }, // TODO: Set glibc_version?
