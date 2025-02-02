@@ -83,7 +83,7 @@ pub fn build(b: *Build) void {
             "--match",
             "v[0-9]*",
             "--always",
-        }, &code, .Ignore) catch "n/a";
+        }, &code, .Ignore) catch break :v "n/a";
         break :v std.mem.trim(u8, git_describe, " \n\r");
     };
 
