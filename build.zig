@@ -119,7 +119,8 @@ pub fn build(b: *Build) void {
             ext.install_name = b.fmt("@rpath/{s}", .{filename}); // macOS only
 
             const ext_path = path: {
-                const cmd = b.addSystemCommand(&.{ "uv", "run", "--python=3.12" });
+                const cmd = Build.Step.Run.create(b, b.fmt("metadata {s} {s}", .{ version_string, platform_string }));
+                cmd.addArgs(&.{ "uv", "run", "--python=3.12" });
                 cmd.addFileArg(metadata_script);
                 cmd.addArgs(&.{ "--extension-name", ext.name });
                 cmd.addArgs(&.{ "--extension-version", ext_version });
@@ -128,17 +129,16 @@ pub fn build(b: *Build) void {
                 cmd.addArg("--library-file");
                 cmd.addArtifactArg(ext);
                 cmd.addArg("--out-file");
-                const path = cmd.addOutputFileArg(filename);
-
-                cmd.step.name = b.fmt("metadata {s} {s}", .{ version_string, platform_string });
-                break :path path;
+                break :path cmd.addOutputFileArg(filename);
             };
 
-            const install_file = b.addInstallFileWithDir(ext_path, .{
-                .custom = if (flat) platform_string else b.fmt("{s}/{s}", .{ version_string, platform_string }),
-            }, filename);
-            install_file.step.name = b.fmt("install {s} {s}", .{ version_string, platform_string });
-            b.getInstallStep().dependOn(&install_file.step);
+            {
+                const install_file = b.addInstallFileWithDir(ext_path, .{
+                    .custom = if (flat) platform_string else b.fmt("{s}/{s}", .{ version_string, platform_string }),
+                }, filename);
+                install_file.step.name = b.fmt("install {s} {s}", .{ version_string, platform_string });
+                b.getInstallStep().dependOn(&install_file.step);
+            }
 
             if (install_headers) {
                 const header_dirs = [_]Build.LazyPath{
@@ -160,14 +160,14 @@ pub fn build(b: *Build) void {
                 b.graph.host.result.cpu.arch == target.result.cpu.arch and
                 duckdb_version != .@"1.2.0") // TODO: Remove once Python package is available
             {
-                const cmd = b.addSystemCommand(&.{ "uv", "run", "--python=3.12", "--with" });
+                const cmd = Build.Step.Run.create(b, b.fmt("sqllogictest {s} {s}", .{ version_string, platform_string }));
+                cmd.addArgs(&.{ "uv", "run", "--python=3.12", "--with" });
                 cmd.addFileArg(sqllogictest);
                 cmd.addArgs(&.{ "--with", b.fmt("duckdb=={s}", .{@tagName(duckdb_version)}) });
                 cmd.addArgs(&.{ "python3", "-m", "duckdb_sqllogictest" });
                 cmd.addArgs(&.{ "--test-dir", "test" });
                 cmd.addArg("--external-extension");
                 cmd.addFileArg(ext_path);
-                cmd.step.name = b.fmt("sqllogictest {s} {s}", .{ version_string, platform_string });
 
                 test_step.dependOn(&cmd.step);
             }
