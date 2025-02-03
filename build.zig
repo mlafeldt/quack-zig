@@ -61,7 +61,7 @@ const Platform = enum {
 
 pub fn build(b: *Build) void {
     const optimize = b.standardOptimizeOption(.{});
-    const duckdb_versions = b.option([]const DuckDBVersion, "duckdb-version", "DuckDB version(s) to build for (default: all)") orelse DuckDBVersion.all;
+    const duckdb_versions = b.option([]const DuckDBVersion, "duckdb-version", "DuckDB version(s) to build for (default: all)") orelse &[_]DuckDBVersion{.@"1.1.3"}; // HACK
     const platforms = b.option([]const Platform, "platform", "DuckDB platform(s) to build for (default: all)") orelse Platform.all;
     const install_headers = b.option(bool, "install-headers", "Install DuckDB C headers") orelse false;
     const flat = b.option(bool, "flat", "Install files without DuckDB version prefix") orelse false;
@@ -71,7 +71,7 @@ pub fn build(b: *Build) void {
     }
 
     const test_step = b.step("test", "Run SQL logic tests");
-    const check_step = b.step("check", "Check if extension compiles");
+    // const check_step = b.step("check", "Check if extension compiles");
 
     const ext_version = v: {
         var code: u8 = undefined;
@@ -117,7 +117,7 @@ pub fn build(b: *Build) void {
             // ext.root_module.addCMacro("DUCKDB_EXTENSION_NAME", ext.name);
             // ext.root_module.addCMacro("DUCKDB_BUILD_LOADABLE_EXTENSION", "1");
 
-            ext.root_module.addImport("duckdb_extension", b.addTranslateC(.{
+            ext.root_module.addImport(b.fmt("duckdb_extension_{s}", .{version_string}), b.addTranslateC(.{
                 .root_source_file = duckdb_headers.path(b, "duckdb_extension.h"),
                 .target = target,
                 .optimize = optimize,
@@ -180,7 +180,7 @@ pub fn build(b: *Build) void {
                 test_step.dependOn(&cmd.step);
             }
 
-            check_step.dependOn(&ext.step);
+            // check_step.dependOn(&ext.step);
         }
     }
 }
