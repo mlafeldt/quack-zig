@@ -71,7 +71,7 @@ pub fn build(b: *Build) void {
     }
 
     const test_step = b.step("test", "Run SQL logic tests");
-    // const check_step = b.step("check", "Check if extension compiles");
+    const check_step = b.step("check", "Check if extension compiles");
 
     const ext_version = v: {
         var code: u8 = undefined;
@@ -180,7 +180,7 @@ pub fn build(b: *Build) void {
                 test_step.dependOn(&cmd.step);
             }
 
-            // check_step.dependOn(&ext.step);
+            check_step.dependOn(&ext.step);
         }
     }
 }
