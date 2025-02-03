@@ -10,7 +10,7 @@ const DuckDBVersion = enum {
 
     const all = std.enums.values(@This());
 
-    fn string(self: @This(), b: *Build) []const u8 {
+    fn toString(self: @This(), b: *Build) []const u8 {
         return b.fmt("v{s}", .{@tagName(self)});
     }
 
@@ -41,7 +41,7 @@ const Platform = enum {
 
     const all = std.enums.values(@This());
 
-    fn string(self: @This()) [:0]const u8 {
+    fn toString(self: @This()) [:0]const u8 {
         return @tagName(self);
     }
 
@@ -71,6 +71,7 @@ pub fn build(b: *Build) void {
     }
 
     const test_step = b.step("test", "Run SQL logic tests");
+    const check_step = b.step("check", "Check if extension compiles");
 
     const ext_version = v: {
         var code: u8 = undefined;
@@ -91,11 +92,11 @@ pub fn build(b: *Build) void {
     const sqllogictest = b.dependency("sqllogictest", .{}).path("");
 
     for (duckdb_versions) |duckdb_version| {
-        const version_string = duckdb_version.string(b);
+        const version_string = duckdb_version.toString(b);
         const duckdb_headers = duckdb_version.headers(b);
 
         for (platforms) |platform| {
-            const platform_string = platform.string();
+            const platform_string = platform.toString();
             const target = platform.target(b);
 
             const ext = b.addSharedLibrary(.{
@@ -171,6 +172,8 @@ pub fn build(b: *Build) void {
 
                 test_step.dependOn(&cmd.step);
             }
+
+            check_step.dependOn(&ext.step);
         }
     }
 }
