@@ -50,6 +50,8 @@ export fn quack_init_c_api(
 const quack_prefix = "Quack ";
 const quack_suffix = " 🐥";
 
+const allocator = std.heap.raw_c_allocator;
+
 fn quack_function(info: c.duckdb_function_info, input: c.duckdb_data_chunk, output: c.duckdb_vector) callconv(.C) void {
     _ = info;
 
@@ -72,12 +74,13 @@ fn quack_function(info: c.duckdb_function_info, input: c.duckdb_data_chunk, outp
         const name_str = api.duckdb_string_t_data.?(&name);
         const name_len = api.duckdb_string_t_length.?(name);
 
-        const result_str = std.mem.concat(std.heap.raw_c_allocator, u8, &[_][]const u8{
+        const result_str = std.mem.concat(allocator, u8, &[_][]const u8{
             quack_prefix,
             name_str[0..name_len],
             quack_suffix,
         }) catch @panic("OOM");
 
         api.duckdb_vector_assign_string_element_len.?(output, row, @ptrCast(result_str), result_str.len);
+        allocator.free(result_str);
     }
 }
