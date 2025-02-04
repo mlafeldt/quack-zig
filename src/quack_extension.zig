@@ -1,45 +1,13 @@
 const std = @import("std");
 const c = @import("duckdb_extension_v1.1.3");
 
+const allocator = std.heap.raw_c_allocator;
+
 var api: c.duckdb_ext_api_v0 = .{};
-
-export fn quack_init_c_api(info: c.duckdb_extension_info, access: *c.duckdb_extension_access) bool {
-    const minimum_api_version = "v0.0.1";
-    const maybe_api: ?*const c.duckdb_ext_api_v0 = @ptrCast(@alignCast(access.get_api.?(info, minimum_api_version)));
-    api = (maybe_api orelse return false).*;
-
-    const db: c.duckdb_database = @ptrCast(access.get_database.?(info));
-    var conn: c.duckdb_connection = undefined;
-    if (api.duckdb_connect.?(db, &conn) == c.DuckDBError) {
-        access.set_error.?(info, "Failed to open connection to database");
-        return false;
-    }
-    defer api.duckdb_disconnect.?(&conn);
-
-    var func: c.duckdb_scalar_function = api.duckdb_create_scalar_function.?();
-    defer api.duckdb_destroy_scalar_function.?(&func);
-
-    api.duckdb_scalar_function_set_name.?(func, "quack");
-
-    var typ = api.duckdb_create_logical_type.?(c.DUCKDB_TYPE_VARCHAR);
-    defer api.duckdb_destroy_logical_type.?(&typ);
-    api.duckdb_scalar_function_add_parameter.?(func, typ);
-    api.duckdb_scalar_function_set_return_type.?(func, typ);
-
-    api.duckdb_scalar_function_set_function.?(func, quack_function);
-
-    if (api.duckdb_register_scalar_function.?(conn, func) == c.DuckDBError) {
-        access.set_error.?(info, "Failed to register scalar function");
-        return false;
-    }
-
-    return true;
-}
+const minimum_api_version = "v0.0.1";
 
 const quack_prefix = "Quack ";
 const quack_suffix = " 🐥";
-
-const allocator = std.heap.raw_c_allocator;
 
 fn quack_function(info: c.duckdb_function_info, input: c.duckdb_data_chunk, output: c.duckdb_vector) callconv(.C) void {
     _ = info;
@@ -72,4 +40,36 @@ fn quack_function(info: c.duckdb_function_info, input: c.duckdb_data_chunk, outp
         api.duckdb_vector_assign_string_element_len.?(output, row, @ptrCast(result_str), result_str.len);
         allocator.free(result_str);
     }
+}
+
+export fn quack_init_c_api(info: c.duckdb_extension_info, access: *c.duckdb_extension_access) bool {
+    const maybe_api: ?*const c.duckdb_ext_api_v0 = @ptrCast(@alignCast(access.get_api.?(info, minimum_api_version)));
+    api = (maybe_api orelse return false).*;
+
+    const db: c.duckdb_database = @ptrCast(access.get_database.?(info));
+    var conn: c.duckdb_connection = undefined;
+    if (api.duckdb_connect.?(db, &conn) == c.DuckDBError) {
+        access.set_error.?(info, "Failed to open connection to database");
+        return false;
+    }
+    defer api.duckdb_disconnect.?(&conn);
+
+    var func: c.duckdb_scalar_function = api.duckdb_create_scalar_function.?();
+    defer api.duckdb_destroy_scalar_function.?(&func);
+
+    api.duckdb_scalar_function_set_name.?(func, "quack");
+
+    var typ = api.duckdb_create_logical_type.?(c.DUCKDB_TYPE_VARCHAR);
+    defer api.duckdb_destroy_logical_type.?(&typ);
+    api.duckdb_scalar_function_add_parameter.?(func, typ);
+    api.duckdb_scalar_function_set_return_type.?(func, typ);
+
+    api.duckdb_scalar_function_set_function.?(func, quack_function);
+
+    if (api.duckdb_register_scalar_function.?(conn, func) == c.DuckDBError) {
+        access.set_error.?(info, "Failed to register scalar function");
+        return false;
+    }
+
+    return true;
 }
