@@ -8,7 +8,14 @@ const minimum_api_version = std.fmt.comptimePrint("v{d}.{d}.{d}", .{
     c.DUCKDB_EXTENSION_API_VERSION_MINOR,
     c.DUCKDB_EXTENSION_API_VERSION_PATCH,
 });
-const ExtensionAPI = c.duckdb_ext_api_v0;
+
+const ExtensionAPI = if (@hasDecl(c, "duckdb_ext_api_v0"))
+    c.duckdb_ext_api_v0
+else if (@hasDecl(c, "duckdb_ext_api_v1"))
+    c.duckdb_ext_api_v1
+else
+    @compileError("unsupported DuckDB extension API version");
+
 var api: ExtensionAPI = .{};
 
 const quack_prefix = "Quack ";

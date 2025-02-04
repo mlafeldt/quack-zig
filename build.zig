@@ -101,12 +101,12 @@ pub fn build(b: *Build) void {
 
             const ext = b.addSharedLibrary(.{
                 .name = "quack",
-                .root_source_file = if (duckdb_version == .@"1.2.0") b.path("src/quack_extension_v1.zig") else b.path("src/quack_extension.zig"),
+                .root_source_file = b.path("src/quack_extension.zig"),
                 .target = target,
                 .optimize = optimize,
                 .link_libc = true,
             });
-            ext.root_module.addImport(if (duckdb_version == .@"1.2.0") "duckdb_extension_v1" else "duckdb_extension", b.addTranslateC(.{
+            ext.root_module.addImport("duckdb_extension", b.addTranslateC(.{
                 .root_source_file = duckdb_headers.path(b, "duckdb_extension.h"),
                 .target = target,
                 .optimize = optimize,
