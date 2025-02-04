@@ -106,18 +106,6 @@ pub fn build(b: *Build) void {
                 .optimize = optimize,
                 .link_libc = true,
             });
-            // ext.addCSourceFiles(.{
-            //     .files = &.{
-            //         "quack_extension.c",
-            //     },
-            //     .root = b.path("src"),
-            //     .flags = &cflags,
-            // });
-            // ext.addIncludePath(duckdb_headers);
-            // ext.linkLibC();
-            // ext.root_module.addCMacro("DUCKDB_EXTENSION_NAME", ext.name);
-            // ext.root_module.addCMacro("DUCKDB_BUILD_LOADABLE_EXTENSION", "1");
-
             ext.root_module.addImport(if (duckdb_version == .@"1.2.0") "duckdb_extension_v1" else "duckdb_extension", b.addTranslateC(.{
                 .root_source_file = duckdb_headers.path(b, "duckdb_extension.h"),
                 .target = target,

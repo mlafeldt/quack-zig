@@ -3,7 +3,8 @@ const c = @import("duckdb_extension");
 
 const allocator = std.heap.raw_c_allocator;
 
-var api: c.duckdb_ext_api_v0 = .{};
+const ExtensionAPI = c.duckdb_ext_api_v0;
+var api: ExtensionAPI = .{};
 const minimum_api_version = "v0.0.1";
 
 const quack_prefix = "Quack ";
@@ -43,7 +44,7 @@ fn quack_function(info: c.duckdb_function_info, input: c.duckdb_data_chunk, outp
 }
 
 export fn quack_init_c_api(info: c.duckdb_extension_info, access: *c.duckdb_extension_access) bool {
-    const maybe_api: ?*const c.duckdb_ext_api_v0 = @ptrCast(@alignCast(access.get_api.?(info, minimum_api_version)));
+    const maybe_api: ?*const ExtensionAPI = @ptrCast(@alignCast(access.get_api.?(info, minimum_api_version)));
     api = (maybe_api orelse return false).*;
 
     const db: c.duckdb_database = @ptrCast(access.get_database.?(info));
