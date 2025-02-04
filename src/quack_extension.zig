@@ -1,18 +1,9 @@
 const std = @import("std");
 const c = @import("duckdb_extension_v1.1.3");
 
-// const ext_api_version = std.fmt.comptimePrint("v{d}.{d}.{d}", .{
-//     c.DUCKDB_EXTENSION_API_VERSION_MAJOR,
-//     c.DUCKDB_EXTENSION_API_VERSION_MINOR,
-//     c.DUCKDB_EXTENSION_API_VERSION_PATCH,
-// });
-
 var api: c.duckdb_ext_api_v0 = .{};
 
-export fn quack_init_c_api(
-    info: c.duckdb_extension_info,
-    access: *c.duckdb_extension_access,
-) bool {
+export fn quack_init_c_api(info: c.duckdb_extension_info, access: *c.duckdb_extension_access) bool {
     const minimum_api_version = "v0.0.1";
     const maybe_api: ?*const c.duckdb_ext_api_v0 = @ptrCast(@alignCast(access.get_api.?(info, minimum_api_version)));
     api = (maybe_api orelse return false).*;
@@ -24,8 +15,6 @@ export fn quack_init_c_api(
         return false;
     }
     defer api.duckdb_disconnect.?(&conn);
-
-    // std.debug.print("Extension API version: {s}\n", .{ext_api_version});
 
     var func: c.duckdb_scalar_function = api.duckdb_create_scalar_function.?();
     defer api.duckdb_destroy_scalar_function.?(&func);
