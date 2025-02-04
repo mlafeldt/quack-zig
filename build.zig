@@ -104,6 +104,7 @@ pub fn build(b: *Build) void {
                 .root_source_file = b.path("src/quack_extension.zig"),
                 .target = target,
                 .optimize = optimize,
+                .link_libc = true,
             });
             // ext.addCSourceFiles(.{
             //     .files = &.{

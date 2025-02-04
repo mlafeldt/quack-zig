@@ -7,13 +7,15 @@ const ext_api_version = std.fmt.comptimePrint("v{d}.{d}.{d}", .{
     c.DUCKDB_EXTENSION_API_VERSION_PATCH,
 });
 
+var api: c.duckdb_ext_api_v0 = undefined;
+
 export fn quack_init_c_api(
     info: c.duckdb_extension_info,
     access: *c.duckdb_extension_access,
 ) bool {
     const minimum_api_version = "v0.0.1";
     const maybe_api: ?*const c.duckdb_ext_api_v0 = @ptrCast(@alignCast(access.get_api.?(info, minimum_api_version)));
-    const api = maybe_api orelse return false;
+    api = maybe_api.?.*; // FIXME
 
     const db: c.duckdb_database = @ptrCast(access.get_database.?(info));
     var conn: c.duckdb_connection = undefined;
@@ -45,8 +47,36 @@ export fn quack_init_c_api(
     return true;
 }
 
+const quack_prefix = "Quack ";
+const quack_suffix = " 🐥";
+
 fn quack_function(info: c.duckdb_function_info, input: c.duckdb_data_chunk, output: c.duckdb_vector) callconv(.C) void {
     _ = info;
-    _ = input;
-    _ = output;
+
+    const input_vector = api.duckdb_data_chunk_get_vector.?(input, 0);
+    const input_data: [*]c.duckdb_string_t = @ptrCast(@alignCast(api.duckdb_vector_get_data.?(input_vector)));
+    const input_mask = api.duckdb_vector_get_validity.?(input_vector);
+
+    api.duckdb_vector_ensure_validity_writable.?(output);
+    const result_mask = api.duckdb_vector_get_validity.?(output);
+
+    const num_rows = api.duckdb_data_chunk_get_size.?(input);
+    for (0..num_rows) |row| {
+        if (!api.duckdb_validity_row_is_valid.?(input_mask, row)) {
+            // name is NULL -> set result to NULL
+            api.duckdb_validity_set_row_invalid.?(result_mask, row);
+            continue;
+        }
+
+        var name = input_data[row];
+        const name_str = api.duckdb_string_t_data.?(&name);
+
+        const result_str = std.mem.concat(std.heap.raw_c_allocator, u8, &[_][]const u8{
+            quack_prefix,
+            std.mem.span(name_str),
+            quack_suffix,
+        }) catch @panic("OOM");
+
+        api.duckdb_vector_assign_string_element_len.?(output, row, @ptrCast(result_str), result_str.len);
+    }
 }
