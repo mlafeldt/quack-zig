@@ -1,13 +1,13 @@
 const std = @import("std");
 const c = @import("duckdb_extension_v1.1.3");
 
-const ext_api_version = std.fmt.comptimePrint("v{d}.{d}.{d}", .{
-    c.DUCKDB_EXTENSION_API_VERSION_MAJOR,
-    c.DUCKDB_EXTENSION_API_VERSION_MINOR,
-    c.DUCKDB_EXTENSION_API_VERSION_PATCH,
-});
+// const ext_api_version = std.fmt.comptimePrint("v{d}.{d}.{d}", .{
+//     c.DUCKDB_EXTENSION_API_VERSION_MAJOR,
+//     c.DUCKDB_EXTENSION_API_VERSION_MINOR,
+//     c.DUCKDB_EXTENSION_API_VERSION_PATCH,
+// });
 
-var api: c.duckdb_ext_api_v0 = undefined;
+var api: c.duckdb_ext_api_v0 = .{};
 
 export fn quack_init_c_api(
     info: c.duckdb_extension_info,
