@@ -3,9 +3,13 @@ const c = @import("duckdb_extension");
 
 const allocator = std.heap.raw_c_allocator;
 
+const minimum_api_version = std.fmt.comptimePrint("v{d}.{d}.{d}", .{
+    c.DUCKDB_EXTENSION_API_VERSION_MAJOR,
+    c.DUCKDB_EXTENSION_API_VERSION_MINOR,
+    c.DUCKDB_EXTENSION_API_VERSION_PATCH,
+});
 const ExtensionAPI = c.duckdb_ext_api_v0;
 var api: ExtensionAPI = .{};
-const minimum_api_version = "v0.0.1";
 
 const quack_prefix = "Quack ";
 const quack_suffix = " 🐥";
