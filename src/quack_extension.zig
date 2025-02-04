@@ -1,5 +1,6 @@
 const std = @import("std");
 const c = @import("duckdb_extension");
+const build_options = @import("build_options");
 
 const allocator = std.heap.raw_c_allocator;
 
@@ -8,6 +9,11 @@ const minimum_api_version = std.fmt.comptimePrint("v{d}.{d}.{d}", .{
     c.DUCKDB_EXTENSION_API_VERSION_MINOR,
     c.DUCKDB_EXTENSION_API_VERSION_PATCH,
 });
+
+comptime {
+    if (!std.mem.eql(u8, minimum_api_version, build_options.ext_api_version))
+        @compileError("DuckDB extension API version mismatch");
+}
 
 const ExtensionAPI = if (@hasDecl(c, "duckdb_ext_api_v0"))
     c.duckdb_ext_api_v0

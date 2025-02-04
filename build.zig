@@ -112,6 +112,12 @@ pub fn build(b: *Build) void {
                 .optimize = optimize,
             }).createModule());
 
+            const build_options = b.addOptions();
+            build_options.addOption(DuckDBVersion, "duckdb_version", duckdb_version);
+            build_options.addOption(Platform, "platform", platform);
+            build_options.addOption([]const u8, "ext_api_version", duckdb_version.extensionAPIVersion());
+            ext.root_module.addOptions("build_options", build_options);
+
             const filename = b.fmt("{s}.duckdb_extension", .{ext.name});
             ext.install_name = b.fmt("@rpath/{s}", .{filename}); // macOS only
 
