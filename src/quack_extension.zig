@@ -15,7 +15,7 @@ export fn quack_init_c_api(
 ) bool {
     const minimum_api_version = "v0.0.1";
     const maybe_api: ?*const c.duckdb_ext_api_v0 = @ptrCast(@alignCast(access.get_api.?(info, minimum_api_version)));
-    api = maybe_api.?.*; // FIXME
+    api = (maybe_api orelse return false).*;
 
     const db: c.duckdb_database = @ptrCast(access.get_database.?(info));
     var conn: c.duckdb_connection = undefined;
@@ -70,10 +70,11 @@ fn quack_function(info: c.duckdb_function_info, input: c.duckdb_data_chunk, outp
 
         var name = input_data[row];
         const name_str = api.duckdb_string_t_data.?(&name);
+        const name_len = api.duckdb_string_t_length.?(name);
 
         const result_str = std.mem.concat(std.heap.raw_c_allocator, u8, &[_][]const u8{
             quack_prefix,
-            std.mem.span(name_str),
+            name_str[0..name_len],
             quack_suffix,
         }) catch @panic("OOM");
 
