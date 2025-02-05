@@ -17,7 +17,7 @@ const DuckDBVersion = enum {
     fn headers(self: @This(), b: *Build) Build.LazyPath {
         return switch (self) {
             .@"1.1.0", .@"1.1.1", .@"1.1.2", .@"1.1.3" => b.dependency("libduckdb_1_1_3", .{}).path(""),
-            .@"1.2.0" => b.dependency("libduckdb_headers", .{}).path("1.2.0"),
+            .@"1.2.0" => b.dependency("libduckdb_1_2_0", .{}).path(""),
         };
     }
 
@@ -158,8 +158,7 @@ pub fn build(b: *Build) void {
 
             // Run tests on native platform
             if (b.graph.host.result.os.tag == target.result.os.tag and
-                b.graph.host.result.cpu.arch == target.result.cpu.arch and
-                duckdb_version != .@"1.2.0") // TODO: Remove once Python package is available
+                b.graph.host.result.cpu.arch == target.result.cpu.arch)
             {
                 const cmd = Build.Step.Run.create(b, b.fmt("sqllogictest {s} {s}", .{ version_string, platform_string }));
                 cmd.addArgs(&.{ "uv", "run", "--python=3.12", "--with" });
