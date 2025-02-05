@@ -91,12 +91,15 @@ SUCCESS
 SUCCESS
 [0/1] test/sql/quack.test
 SUCCESS
-Build Summary: 13/13 steps succeeded
+[0/1] test/sql/quack.test
+SUCCESS
+Build Summary: 16/16 steps succeeded
 test success
-├─ sqllogictest v1.1.0 osx_arm64 success 95ms MaxRSS:45M
-├─ sqllogictest v1.1.1 osx_arm64 success 104ms MaxRSS:45M
-├─ sqllogictest v1.1.2 osx_arm64 success 94ms MaxRSS:43M
-└─ sqllogictest v1.1.3 osx_arm64 success 94ms MaxRSS:44M
+├─ sqllogictest v1.1.0 osx_arm64 success 91ms MaxRSS:43M
+├─ sqllogictest v1.1.1 osx_arm64 success 92ms MaxRSS:44M
+├─ sqllogictest v1.1.2 osx_arm64 success 92ms MaxRSS:43M
+├─ sqllogictest v1.1.3 osx_arm64 success 93ms MaxRSS:44M
+└─ sqllogictest v1.2.0 osx_arm64 success 103ms MaxRSS:45M
 ```
 
 You can also pass `-Dduckdb-version` to test against a specific DuckDB version, or use `-Dplatform` to select a different native platform, e.g. `linux_amd64_gcc4` instead of `linux_amd64`.
@@ -105,9 +108,9 @@ You can also pass `-Dduckdb-version` to test against a specific DuckDB version, 
 
 ```
 ❯ duckdb -unsigned
-v1.1.3 19864453f7
+v1.2.0 5f5512b827
 Enter ".help" for usage hints.
-🟡◗ LOAD 'zig-out/v1.1.3/osx_arm64/quack.duckdb_extension';
+🟡◗ LOAD 'zig-out/v1.2.0/osx_arm64/quack.duckdb_extension';
 🟡◗ SELECT quack('Zig');
 ┌──────────────┐
 │ quack('Zig') │
