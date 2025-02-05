@@ -74,7 +74,7 @@ pub fn build(b: *Build) void {
     const check_step = b.step("check", "Check if extension compiles");
 
     const ext_version = v: {
-        var code: u8 = undefined;
+        var code: u8 = 0;
         const git_describe = b.runAllowFail(&[_][]const u8{
             "git",
             "-C",
