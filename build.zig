@@ -73,23 +73,10 @@ pub fn build(b: *Build) void {
     const test_step = b.step("test", "Run SQL logic tests");
     const check_step = b.step("check", "Check if extension compiles");
 
-    const ext_version = v: {
-        var code: u8 = 0;
-        const git_describe = b.runAllowFail(&[_][]const u8{
-            "git",
-            "-C",
-            b.build_root.path orelse ".",
-            "describe",
-            "--tags",
-            "--match",
-            "v[0-9]*",
-            "--always",
-        }, &code, .Ignore) catch break :v "n/a";
-        break :v std.mem.trim(u8, git_describe, " \n\r");
-    };
-
     const metadata_script = b.dependency("extension_ci_tools", .{}).path("scripts/append_extension_metadata.py");
     const sqllogictest = b.dependency("sqllogictest", .{}).path("");
+
+    const ext_version = detectGitVersion(b) catch "n/a";
 
     for (duckdb_versions) |duckdb_version| {
         const version_string = duckdb_version.toString(b);
@@ -175,6 +162,22 @@ pub fn build(b: *Build) void {
             check_step.dependOn(&ext.step);
         }
     }
+}
+
+fn detectGitVersion(b: *std.Build) ![]const u8 {
+    var code: u8 = 0;
+    const git_describe = try b.runAllowFail(&[_][]const u8{
+        "git",
+        "-C",
+        b.build_root.path orelse ".",
+        "describe",
+        "--tags",
+        "--match",
+        "v[0-9]*",
+        "--always",
+    }, &code, .Ignore);
+
+    return std.mem.trim(u8, git_describe, " \n\r");
 }
 
 const cflags = [_][]const u8{
