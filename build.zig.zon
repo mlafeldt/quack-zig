@@ -12,8 +12,8 @@
             .hash = "122079801b898654d0b24e33d0bc4ac5411e31debb418dc35b61b1d9207d1a4e1625",
         },
         .extension_ci_tools = .{
-            .url = "https://github.com/duckdb/extension-ci-tools/archive/v1.1.3.zip",
-            .hash = "1220b2dbcf900b96bf9f2242af1ebac5f7f4b78a62cca0f78814f86204e7045be7c1",
+            .url = "https://github.com/duckdb/extension-ci-tools/archive/v1.2.0.zip",
+            .hash = "12207994a4b65c3adb4850d2f28c2389c7b5a51d5419940fd189fb030c9abc5e0a85",
         },
         // TODO: Switch to Python package once it's available
         .sqllogictest = .{
