@@ -22,33 +22,33 @@ else
 pub const API = struct {
     raw: *const duckdb_ext_api,
 
-    duckdb_connect: *const fn (c.duckdb_database, [*c]c.duckdb_connection) callconv(.C) c.duckdb_state,
-    duckdb_disconnect: *const fn ([*c]c.duckdb_connection) callconv(.C) void,
+    connect: *const fn (c.duckdb_database, [*c]c.duckdb_connection) callconv(.C) c.duckdb_state,
+    disconnect: *const fn ([*c]c.duckdb_connection) callconv(.C) void,
 
-    duckdb_string_t_length: *const fn (c.duckdb_string_t) callconv(.C) u32,
-    duckdb_string_t_data: *const fn ([*c]c.duckdb_string_t) callconv(.C) [*c]const u8,
+    string_t_length: *const fn (c.duckdb_string_t) callconv(.C) u32,
+    string_t_data: *const fn ([*c]c.duckdb_string_t) callconv(.C) [*c]const u8,
 
-    duckdb_create_logical_type: *const fn (c.duckdb_type) callconv(.C) c.duckdb_logical_type,
-    duckdb_destroy_logical_type: *const fn ([*c]c.duckdb_logical_type) callconv(.C) void,
+    create_logical_type: *const fn (c.duckdb_type) callconv(.C) c.duckdb_logical_type,
+    destroy_logical_type: *const fn ([*c]c.duckdb_logical_type) callconv(.C) void,
 
-    duckdb_data_chunk_get_vector: *const fn (c.duckdb_data_chunk, c.idx_t) callconv(.C) c.duckdb_vector,
-    duckdb_data_chunk_get_size: *const fn (c.duckdb_data_chunk) callconv(.C) c.idx_t,
+    data_chunk_get_vector: *const fn (c.duckdb_data_chunk, c.idx_t) callconv(.C) c.duckdb_vector,
+    data_chunk_get_size: *const fn (c.duckdb_data_chunk) callconv(.C) c.idx_t,
 
-    duckdb_vector_get_data: *const fn (c.duckdb_vector) callconv(.C) ?*anyopaque,
-    duckdb_vector_get_validity: *const fn (c.duckdb_vector) callconv(.C) [*c]u64,
-    duckdb_vector_ensure_validity_writable: *const fn (c.duckdb_vector) callconv(.C) void,
-    duckdb_vector_assign_string_element_len: *const fn (c.duckdb_vector, c.idx_t, [*c]const u8, c.idx_t) callconv(.C) void,
+    vector_get_data: *const fn (c.duckdb_vector) callconv(.C) ?*anyopaque,
+    vector_get_validity: *const fn (c.duckdb_vector) callconv(.C) [*c]u64,
+    vector_ensure_validity_writable: *const fn (c.duckdb_vector) callconv(.C) void,
+    vector_assign_string_element_len: *const fn (c.duckdb_vector, c.idx_t, [*c]const u8, c.idx_t) callconv(.C) void,
 
-    duckdb_validity_row_is_valid: *const fn ([*c]u64, c.idx_t) callconv(.C) bool,
-    duckdb_validity_set_row_invalid: *const fn ([*c]u64, c.idx_t) callconv(.C) void,
+    validity_row_is_valid: *const fn ([*c]u64, c.idx_t) callconv(.C) bool,
+    validity_set_row_invalid: *const fn ([*c]u64, c.idx_t) callconv(.C) void,
 
-    duckdb_create_scalar_function: *const fn (...) callconv(.C) c.duckdb_scalar_function,
-    duckdb_destroy_scalar_function: *const fn ([*c]c.duckdb_scalar_function) callconv(.C) void,
-    duckdb_scalar_function_set_name: *const fn (c.duckdb_scalar_function, [*c]const u8) callconv(.C) void,
-    duckdb_scalar_function_add_parameter: *const fn (c.duckdb_scalar_function, c.duckdb_logical_type) callconv(.C) void,
-    duckdb_scalar_function_set_return_type: *const fn (c.duckdb_scalar_function, c.duckdb_logical_type) callconv(.C) void,
-    duckdb_scalar_function_set_function: *const fn (c.duckdb_scalar_function, *const fn (c.duckdb_function_info, c.duckdb_data_chunk, c.duckdb_vector) callconv(.C) void) callconv(.C) void,
-    duckdb_register_scalar_function: *const fn (c.duckdb_connection, c.duckdb_scalar_function) callconv(.C) c.duckdb_state,
+    create_scalar_function: *const fn (...) callconv(.C) c.duckdb_scalar_function,
+    destroy_scalar_function: *const fn ([*c]c.duckdb_scalar_function) callconv(.C) void,
+    scalar_function_set_name: *const fn (c.duckdb_scalar_function, [*c]const u8) callconv(.C) void,
+    scalar_function_add_parameter: *const fn (c.duckdb_scalar_function, c.duckdb_logical_type) callconv(.C) void,
+    scalar_function_set_return_type: *const fn (c.duckdb_scalar_function, c.duckdb_logical_type) callconv(.C) void,
+    scalar_function_set_function: *const fn (c.duckdb_scalar_function, *const fn (c.duckdb_function_info, c.duckdb_data_chunk, c.duckdb_vector) callconv(.C) void) callconv(.C) void,
+    register_scalar_function: *const fn (c.duckdb_connection, c.duckdb_scalar_function) callconv(.C) c.duckdb_state,
 };
 
 var extension_api: ?API = null;
@@ -61,33 +61,33 @@ pub fn init(info: c.duckdb_extension_info, access: *c.duckdb_extension_access) ?
         extension_api = .{
             .raw = api,
 
-            .duckdb_connect = api.duckdb_connect.?,
-            .duckdb_disconnect = api.duckdb_disconnect.?,
+            .connect = api.duckdb_connect.?,
+            .disconnect = api.duckdb_disconnect.?,
 
-            .duckdb_string_t_length = api.duckdb_string_t_length.?,
-            .duckdb_string_t_data = api.duckdb_string_t_data.?,
+            .string_t_length = api.duckdb_string_t_length.?,
+            .string_t_data = api.duckdb_string_t_data.?,
 
-            .duckdb_create_logical_type = api.duckdb_create_logical_type.?,
-            .duckdb_destroy_logical_type = api.duckdb_destroy_logical_type.?,
+            .create_logical_type = api.duckdb_create_logical_type.?,
+            .destroy_logical_type = api.duckdb_destroy_logical_type.?,
 
-            .duckdb_data_chunk_get_vector = api.duckdb_data_chunk_get_vector.?,
-            .duckdb_data_chunk_get_size = api.duckdb_data_chunk_get_size.?,
+            .data_chunk_get_vector = api.duckdb_data_chunk_get_vector.?,
+            .data_chunk_get_size = api.duckdb_data_chunk_get_size.?,
 
-            .duckdb_vector_get_data = api.duckdb_vector_get_data.?,
-            .duckdb_vector_get_validity = api.duckdb_vector_get_validity.?,
-            .duckdb_vector_ensure_validity_writable = api.duckdb_vector_ensure_validity_writable.?,
-            .duckdb_vector_assign_string_element_len = api.duckdb_vector_assign_string_element_len.?,
+            .vector_get_data = api.duckdb_vector_get_data.?,
+            .vector_get_validity = api.duckdb_vector_get_validity.?,
+            .vector_ensure_validity_writable = api.duckdb_vector_ensure_validity_writable.?,
+            .vector_assign_string_element_len = api.duckdb_vector_assign_string_element_len.?,
 
-            .duckdb_validity_row_is_valid = api.duckdb_validity_row_is_valid.?,
-            .duckdb_validity_set_row_invalid = api.duckdb_validity_set_row_invalid.?,
+            .validity_row_is_valid = api.duckdb_validity_row_is_valid.?,
+            .validity_set_row_invalid = api.duckdb_validity_set_row_invalid.?,
 
-            .duckdb_create_scalar_function = api.duckdb_create_scalar_function.?,
-            .duckdb_destroy_scalar_function = api.duckdb_destroy_scalar_function.?,
-            .duckdb_scalar_function_set_name = api.duckdb_scalar_function_set_name.?,
-            .duckdb_scalar_function_add_parameter = api.duckdb_scalar_function_add_parameter.?,
-            .duckdb_scalar_function_set_return_type = api.duckdb_scalar_function_set_return_type.?,
-            .duckdb_scalar_function_set_function = api.duckdb_scalar_function_set_function.?,
-            .duckdb_register_scalar_function = api.duckdb_register_scalar_function.?,
+            .create_scalar_function = api.duckdb_create_scalar_function.?,
+            .destroy_scalar_function = api.duckdb_destroy_scalar_function.?,
+            .scalar_function_set_name = api.duckdb_scalar_function_set_name.?,
+            .scalar_function_add_parameter = api.duckdb_scalar_function_add_parameter.?,
+            .scalar_function_set_return_type = api.duckdb_scalar_function_set_return_type.?,
+            .scalar_function_set_function = api.duckdb_scalar_function_set_function.?,
+            .register_scalar_function = api.duckdb_register_scalar_function.?,
         };
     }
 
