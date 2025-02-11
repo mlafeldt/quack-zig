@@ -93,7 +93,7 @@ pub fn build(b: *Build) void {
                 .optimize = optimize,
                 .link_libc = true,
             });
-            ext.root_module.addImport("duckdb_extension", b.addTranslateC(.{
+            ext.root_module.addImport("duckdb_capi", b.addTranslateC(.{
                 .root_source_file = duckdb_headers.path(b, "duckdb_extension.h"),
                 .target = target,
                 .optimize = optimize,
@@ -181,10 +181,3 @@ fn detectGitVersion(b: *std.Build) ![]const u8 {
 
     return std.mem.trim(u8, git_describe, " \n\r");
 }
-
-const cflags = [_][]const u8{
-    "-Wall",
-    "-Wextra",
-    "-Werror",
-    "-fvisibility=hidden", // Avoid symbol clashes
-};
