@@ -72,6 +72,7 @@ pub fn build(b: *Build) void {
 
     const test_step = b.step("test", "Run SQL logic tests");
     const check_step = b.step("check", "Check if extension compiles");
+    const unit_test_step = b.step("unit", "Run unit tests");
 
     const metadata_script = b.dependency("extension_ci_tools", .{}).path("scripts/append_extension_metadata.py");
     const sqllogictest = b.dependency("sqllogictest", .{}).path("");
@@ -159,6 +160,20 @@ pub fn build(b: *Build) void {
                 cmd.addFileArg(ext_path);
 
                 test_step.dependOn(&cmd.step);
+
+                const unit_tests = b.addTest(.{
+                    .root_source_file = b.path("src/quack_extension.zig"),
+                    .target = target,
+                    .optimize = optimize,
+                });
+                unit_tests.root_module.addImport("duckdb_capi", b.addTranslateC(.{
+                    .root_source_file = duckdb_headers.path(b, "duckdb_extension.h"),
+                    .target = target,
+                    .optimize = optimize,
+                }).createModule());
+
+                const run_unit_tests = b.addRunArtifact(unit_tests);
+                unit_test_step.dependOn(&run_unit_tests.step);
             }
 
             check_step.dependOn(&ext.step);

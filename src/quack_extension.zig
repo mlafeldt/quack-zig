@@ -3,15 +3,12 @@ const Extension = @import("extension.zig").Extension;
 const c = @import("extension.zig").c;
 
 export fn quack_init_c_api(info: c.duckdb_extension_info, access: *c.duckdb_extension_access) bool {
-    var ext = Extension.init(info, access) catch |e| {
+    var ext = Extension.init(std.heap.raw_c_allocator, info, access) catch |e| {
         access.set_error.?(info, "Failed to initialize extension");
         std.log.err("Failed to initialize extension: {s}", .{@errorName(e)});
         return false;
     };
     defer ext.deinit();
-
-    const conn = ext.releaseConnection();
-    _ = conn;
 
     // var conn: c.duckdb_connection = null;
     // if (ext.api.duckdb_connect.?(ext.db, &conn) == c.DuckDBError) {
