@@ -5,7 +5,7 @@ const Allocator = std.mem.Allocator;
 
 const DuckDBError = c.DuckDBError;
 
-const duckdb_ext_api = if (@hasDecl(c, "duckdb_ext_api_v0"))
+const API = if (@hasDecl(c, "duckdb_ext_api_v0"))
     c.duckdb_ext_api_v0
 else if (@hasDecl(c, "duckdb_ext_api_v1"))
     c.duckdb_ext_api_v1
@@ -24,12 +24,12 @@ pub const DB = struct {
 
 pub const Connection = struct {
     allocator: Allocator,
-    api: duckdb_ext_api,
+    api: API,
     conn: *c.duckdb_connection,
 
     const Self = @This();
 
-    pub fn init(allocator: Allocator, db: DB, api: duckdb_ext_api) !Self {
+    pub fn open(allocator: Allocator, db: DB, api: API) !Self {
         const conn = try allocator.create(c.duckdb_connection);
         errdefer allocator.destroy(conn);
 
@@ -56,27 +56,18 @@ pub const Extension = struct {
     info: c.duckdb_extension_info,
     access: *c.duckdb_extension_access,
     db: DB,
-    api: duckdb_ext_api,
+    api: API,
     conn: Connection,
 
     const Self = @This();
 
-    const min_api_version = std.fmt.comptimePrint("v{d}.{d}.{d}", .{
-        c.DUCKDB_EXTENSION_API_VERSION_MAJOR,
-        c.DUCKDB_EXTENSION_API_VERSION_MINOR,
-        c.DUCKDB_EXTENSION_API_VERSION_PATCH,
-    });
-
     pub fn init(allocator: Allocator, info: c.duckdb_extension_info, access: *c.duckdb_extension_access) !Self {
         const db = DB.provided(access.get_database.?(info));
-
-        const maybe_api: ?*const duckdb_ext_api = @ptrCast(@alignCast(access.get_api.?(info, min_api_version)));
-        if (maybe_api == null) {
-            return error.APIVersionNotSupported;
-        }
-        const api = maybe_api.?.*;
-
-        const conn = try Connection.init(allocator, db, api);
+        const api = try getAPI(info, access);
+        const conn = Connection.open(allocator, db, api) catch |e| {
+            access.set_error.?(info, "Failed to open connection to database");
+            return e;
+        };
 
         return .{
             .info = info,
@@ -90,6 +81,19 @@ pub const Extension = struct {
     pub fn deinit(self: *Self) void {
         self.conn.deinit();
         self.* = undefined;
+    }
+
+    fn getAPI(info: c.duckdb_extension_info, access: *c.duckdb_extension_access) !API {
+        const min_api_version = std.fmt.comptimePrint("v{d}.{d}.{d}", .{
+            c.DUCKDB_EXTENSION_API_VERSION_MAJOR,
+            c.DUCKDB_EXTENSION_API_VERSION_MINOR,
+            c.DUCKDB_EXTENSION_API_VERSION_PATCH,
+        });
+        const maybe_api: ?*const API = @ptrCast(@alignCast(access.get_api.?(info, min_api_version)));
+        if (maybe_api == null) {
+            return error.APIVersionNotSupported;
+        }
+        return maybe_api.?.*;
     }
 
     // pub fn setError(self: Self, msg: [*:0]const u8) void {
