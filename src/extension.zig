@@ -4,7 +4,7 @@ pub const c = @import("duckdb_capi");
 const Allocator = std.mem.Allocator;
 const DuckDBError = c.DuckDBError;
 
-const API = if (@hasDecl(c, "duckdb_ext_api_v0"))
+pub const API = if (@hasDecl(c, "duckdb_ext_api_v0"))
     c.duckdb_ext_api_v0
 else if (@hasDecl(c, "duckdb_ext_api_v1"))
     c.duckdb_ext_api_v1
@@ -54,7 +54,7 @@ pub const Connection = struct {
 const Extension = @This();
 
 // SAFETY: api is initialized in init
-var api: API = undefined;
+pub var api: API = undefined;
 
 info: c.duckdb_extension_info,
 access: *c.duckdb_extension_access,
@@ -99,29 +99,24 @@ fn getAPI(info: c.duckdb_extension_info, access: *c.duckdb_extension_access) !AP
 
 pub fn registerScalarFunction(
     self: *Extension,
-    func: ScalarFunctionRef,
+    func: c.duckdb_scalar_function,
 ) !void {
-    if (api.duckdb_register_scalar_function.?(self.conn.inner.*, func.inner) == DuckDBError) {
+    if (api.duckdb_register_scalar_function.?(self.conn.inner.*, func) == DuckDBError) {
         self.access.set_error.?(self.info, "Failed to register scalar function");
         return error.RegisterScalarFunctionError;
     }
 }
-
-pub const ScalarFunctionRef = struct {
-    inner: c.duckdb_scalar_function,
-
-    pub fn deinit(self: *ScalarFunctionRef) void {
-        api.duckdb_destroy_scalar_function.?(&self.inner);
-        self.* = undefined;
-    }
-};
 
 pub fn ScalarFunction(
     comptime name: [*:0]const u8,
     comptime func: c.duckdb_scalar_function_t,
 ) type {
     return struct {
-        pub fn create() ScalarFunctionRef {
+        const Self = @This();
+
+        ptr: c.duckdb_scalar_function,
+
+        pub fn create() Self {
             const ptr = api.duckdb_create_scalar_function.?();
             api.duckdb_scalar_function_set_name.?(ptr, name);
 
@@ -133,7 +128,12 @@ pub fn ScalarFunction(
 
             api.duckdb_scalar_function_set_function.?(ptr, func);
 
-            return .{ .inner = ptr };
+            return .{ .ptr = ptr };
+        }
+
+        pub fn deinit(self: *Self) void {
+            api.duckdb_destroy_scalar_function.?(&self.ptr);
+            self.* = undefined;
         }
     };
 }
