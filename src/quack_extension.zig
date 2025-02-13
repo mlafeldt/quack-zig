@@ -3,24 +3,33 @@ const Extension = @import("extension.zig").Extension;
 const c = @import("extension.zig").c;
 
 export fn quack_init_c_api(info: c.duckdb_extension_info, access: *c.duckdb_extension_access) bool {
-    var ext = Extension.init(std.heap.raw_c_allocator, info, access) catch return false;
+    var ext = Extension.init(std.heap.raw_c_allocator, info, access) catch |e| {
+        access.set_error.?(info, "Failed to initialize extension");
+        std.log.err("Failed to initialize extension: {s}", .{@errorName(e)});
+        return false;
+    };
     defer ext.deinit();
 
-    const api = ext.getAPI();
+    // var conn: c.duckdb_connection = null;
+    // if (ext.api.duckdb_connect.?(ext.db, &conn) == c.DuckDBError) {
+    //     ext.set_error("Failed to open connection to database");
+    //     return false;
+    // }
+    // defer ext.api.duckdb_disconnect.?(&conn);
 
-    var func: c.duckdb_scalar_function = api.duckdb_create_scalar_function.?();
-    defer api.duckdb_destroy_scalar_function.?(&func);
+    // var func: c.duckdb_scalar_function = D.create_scalar_function();
+    // defer D.destroy_scalar_function(&func);
 
-    // api.duckdb_scalar_function_set_name.?(func, "quack");
+    // D.scalar_function_set_name(func, "quack");
 
-    // var typ = api.duckdb_create_logical_type(c.DUCKDB_TYPE_VARCHAR);
-    // defer api.duckdb_destroy_logical_type(&typ);
-    // api.duckdb_scalar_function_add_parameter(func, typ);
-    // api.duckdb_scalar_function_set_return_type(func, typ);
+    // var typ = D.create_logical_type(c.DUCKDB_TYPE_VARCHAR);
+    // defer D.destroy_logical_type(&typ);
+    // D.scalar_function_add_parameter(func, typ);
+    // D.scalar_function_set_return_type(func, typ);
 
-    // api.scalar_function_set_function(func, quack_function);
+    // D.scalar_function_set_function(func, quack_function);
 
-    // if (api.duckdb_register_scalar_function(ext.conn.conn, func) == c.DuckDBError) {
+    // if (D.register_scalar_function(conn, func) == c.DuckDBError) {
     //     access.set_error.?(info, "Failed to register scalar function");
     //     return false;
     // }
