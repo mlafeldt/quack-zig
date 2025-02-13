@@ -1,15 +1,16 @@
 const std = @import("std");
 const Extension = @import("extension.zig");
+const ScalarFunction = Extension.ScalarFunction;
 const c = @import("extension.zig").c;
 
 export fn quack_init_c_api(info: c.duckdb_extension_info, access: *c.duckdb_extension_access) bool {
     var ext = Extension.init(std.heap.raw_c_allocator, info, access) catch return false;
     defer ext.deinit();
 
-    // const func = ScalarFunction("quack", quack_function).create(ext.api);
-    // ext.conn.registerScalarFunction(func) catch return false;
+    var func = ScalarFunction("quack", quack_function).create();
+    defer func.deinit();
 
-    ext.registerScalarFunction("quack", quack_function) catch return false;
+    ext.registerScalarFunction(func) catch return false;
 
     // var conn: c.duckdb_connection = null;
     // if (ext.api.duckdb_connect.?(ext.db, &conn) == c.DuckDBError) {

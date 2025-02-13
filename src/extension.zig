@@ -12,72 +12,68 @@ else
     @compileError("unsupported DuckDB extension API version");
 
 pub const DB = struct {
-    ptr: *c.duckdb_database,
+    inner: *c.duckdb_database,
 
     const Self = @This();
 
     pub fn provided(db: *c.duckdb_database) Self {
-        return .{ .ptr = db };
+        return .{ .inner = db };
     }
 };
 
 pub const Connection = struct {
     allocator: Allocator,
     api: API,
-    conn: *c.duckdb_connection,
+    inner: *c.duckdb_connection,
 
     const Self = @This();
 
-    pub fn open(allocator: Allocator, db: DB, api: API) !Self {
+    pub fn open(allocator: Allocator, db: DB) !Self {
         const conn = try allocator.create(c.duckdb_connection);
         errdefer allocator.destroy(conn);
 
-        if (api.duckdb_connect.?(db.ptr.*, conn) == DuckDBError) {
+        if (api.duckdb_connect.?(db.inner.*, conn) == DuckDBError) {
             return error.ConnectError;
         }
 
         return .{
             .allocator = allocator,
-            .conn = conn,
             .api = api,
+            .inner = conn,
         };
     }
 
     pub fn deinit(self: *Self) void {
-        const conn = self.conn;
+        const conn = self.inner;
         self.api.duckdb_disconnect.?(conn);
         self.allocator.destroy(conn);
         self.* = undefined;
-    }
-
-    pub fn registerScalarFunction(self: *Self, func: ScalarFunctionRef) !void {
-        if (self.api.duckdb_register_scalar_function.?(self.conn.*, func.ptr) == DuckDBError) {
-            return error.RegisterScalarFunctionError;
-        }
     }
 };
 
 const Extension = @This();
 
-// info: c.duckdb_extension_info,
-// access: *c.duckdb_extension_access,
-// db: DB,
-api: API,
+// SAFETY: api is initialized in init
+var api: API = undefined;
+
+info: c.duckdb_extension_info,
+access: *c.duckdb_extension_access,
+db: DB,
 conn: Connection,
 
 pub fn init(allocator: Allocator, info: c.duckdb_extension_info, access: *c.duckdb_extension_access) !Extension {
+    api = try getAPI(info, access);
+
     const db = DB.provided(access.get_database.?(info));
-    const api = try getAPI(info, access);
-    const conn = Connection.open(allocator, db, api) catch |e| {
+    const conn = Connection.open(allocator, db) catch |e| {
         access.set_error.?(info, "Failed to open connection to database");
         return e;
     };
 
     return .{
-        // .info = info,
-        // .access = access,
-        // .db = db,
-        .api = api,
+        .info = info,
+        .access = access,
+        .db = db,
         .conn = conn,
     };
 }
@@ -93,6 +89,7 @@ fn getAPI(info: c.duckdb_extension_info, access: *c.duckdb_extension_access) !AP
         c.DUCKDB_EXTENSION_API_VERSION_MINOR,
         c.DUCKDB_EXTENSION_API_VERSION_PATCH,
     });
+
     const maybe_api: ?*const API = @ptrCast(@alignCast(access.get_api.?(info, min_api_version)));
     if (maybe_api == null) {
         return error.APIVersionNotSupported;
@@ -102,15 +99,21 @@ fn getAPI(info: c.duckdb_extension_info, access: *c.duckdb_extension_access) !AP
 
 pub fn registerScalarFunction(
     self: *Extension,
-    comptime name: [*:0]const u8,
-    comptime func: c.duckdb_scalar_function_t,
+    func: ScalarFunctionRef,
 ) !void {
-    const func_ref = ScalarFunction(name, func).create(self.api);
-    self.conn.registerScalarFunction(func_ref) catch return error.RegisterScalarFunctionError;
+    if (api.duckdb_register_scalar_function.?(self.conn.inner.*, func.inner) == DuckDBError) {
+        self.access.set_error.?(self.info, "Failed to register scalar function");
+        return error.RegisterScalarFunctionError;
+    }
 }
 
 pub const ScalarFunctionRef = struct {
-    ptr: c.duckdb_scalar_function,
+    inner: c.duckdb_scalar_function,
+
+    pub fn deinit(self: *ScalarFunctionRef) void {
+        api.duckdb_destroy_scalar_function.?(&self.inner);
+        self.* = undefined;
+    }
 };
 
 pub fn ScalarFunction(
@@ -118,7 +121,7 @@ pub fn ScalarFunction(
     comptime func: c.duckdb_scalar_function_t,
 ) type {
     return struct {
-        pub fn create(api: API) ScalarFunctionRef {
+        pub fn create() ScalarFunctionRef {
             const ptr = api.duckdb_create_scalar_function.?();
             api.duckdb_scalar_function_set_name.?(ptr, name);
 
@@ -130,7 +133,7 @@ pub fn ScalarFunction(
 
             api.duckdb_scalar_function_set_function.?(ptr, func);
 
-            return .{ .ptr = ptr };
+            return .{ .inner = ptr };
         }
     };
 }
