@@ -1,5 +1,5 @@
 const std = @import("std");
-const Extension = @import("extension.zig").Extension;
+const Extension = @import("extension.zig");
 const c = @import("extension.zig").c;
 
 export fn quack_init_c_api(info: c.duckdb_extension_info, access: *c.duckdb_extension_access) bool {
