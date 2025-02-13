@@ -50,6 +50,12 @@ pub const Connection = struct {
         self.allocator.destroy(conn);
         self.* = undefined;
     }
+
+    pub fn registerScalarFunction(self: *Self, func: ScalarFunctionRef) !void {
+        if (self.api.duckdb_register_scalar_function.?(self.conn.*, func.ptr) == DuckDBError) {
+            return error.RegisterScalarFunctionError;
+        }
+    }
 };
 
 pub const Extension = struct {
@@ -96,7 +102,42 @@ pub const Extension = struct {
         return maybe_api.?.*;
     }
 
+    pub fn registerScalarFunction(
+        self: *Self,
+        comptime name: [*:0]const u8,
+        comptime func: c.duckdb_scalar_function_t,
+    ) !void {
+        const func_ref = ScalarFunction(name, func).create(self.api);
+        self.conn.registerScalarFunction(func_ref) catch return error.RegisterScalarFunctionError;
+    }
+
     // pub fn setError(self: Self, msg: [*:0]const u8) void {
     //     self.access.set_error.?(self.info, msg);
     // }
 };
+
+pub const ScalarFunctionRef = struct {
+    ptr: c.duckdb_scalar_function,
+};
+
+pub fn ScalarFunction(
+    comptime name: [*:0]const u8,
+    comptime func: c.duckdb_scalar_function_t,
+) type {
+    return struct {
+        pub fn create(api: API) ScalarFunctionRef {
+            const ptr = api.duckdb_create_scalar_function.?();
+            api.duckdb_scalar_function_set_name.?(ptr, name);
+
+            // HACK
+            var typ = api.duckdb_create_logical_type.?(c.DUCKDB_TYPE_VARCHAR);
+            defer api.duckdb_destroy_logical_type.?(&typ);
+            api.duckdb_scalar_function_add_parameter.?(ptr, typ);
+            api.duckdb_scalar_function_set_return_type.?(ptr, typ);
+
+            api.duckdb_scalar_function_set_function.?(ptr, func);
+
+            return .{ .ptr = ptr };
+        }
+    };
+}

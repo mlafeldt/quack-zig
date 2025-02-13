@@ -6,6 +6,11 @@ export fn quack_init_c_api(info: c.duckdb_extension_info, access: *c.duckdb_exte
     var ext = Extension.init(std.heap.raw_c_allocator, info, access) catch return false;
     defer ext.deinit();
 
+    // const func = ScalarFunction("quack", quack_function).create(ext.api);
+    // ext.conn.registerScalarFunction(func) catch return false;
+
+    ext.registerScalarFunction("quack", quack_function) catch return false;
+
     // var conn: c.duckdb_connection = null;
     // if (ext.api.duckdb_connect.?(ext.db, &conn) == c.DuckDBError) {
     //     ext.set_error("Failed to open connection to database");
@@ -31,6 +36,10 @@ export fn quack_init_c_api(info: c.duckdb_extension_info, access: *c.duckdb_exte
     // }
 
     return true;
+}
+
+fn quack_function(_: c.duckdb_function_info, _: c.duckdb_data_chunk, _: c.duckdb_vector) callconv(.C) void {
+    std.debug.print("quack\n", .{});
 }
 
 // const allocator = std.heap.raw_c_allocator;
