@@ -17,8 +17,8 @@
         },
         // TODO: Switch to Python package once it's available
         .sqllogictest = .{
-            .url = "https://github.com/duckdb/duckdb-sqllogictest-python/archive/faf6f19.zip",
-            .hash = "122031b7caca451caf571803926d5c10d262fd8a13c80ecfd2d1480bda1c4254693d",
+            .url = "https://github.com/duckdb/duckdb-sqllogictest-python/archive/4db6a82.zip",
+            .hash = "12201e67ec34a2693062f774d3396786cdf6db4c2a828f75072376d1c8b5ed4fe93e",
         },
     },
     .paths = .{""},
