@@ -58,12 +58,16 @@ pub fn deinit(self: *Extension) void {
     self.* = undefined;
 }
 
+pub fn setError(self: *Extension, msg: [*:0]const u8) void {
+    self.access.set_error.?(self.info, msg);
+}
+
 pub fn registerScalarFunction(
     self: *Extension,
     func: ScalarFunction,
 ) !void {
     if (api.duckdb_register_scalar_function.?(self.conn.ptr.*, func.ptr) == DuckDBError) {
-        self.access.set_error.?(self.info, "Failed to register scalar function");
+        self.setError("Failed to register scalar function");
         return error.RegisterScalarFunctionError;
     }
 }
