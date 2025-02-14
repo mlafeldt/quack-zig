@@ -18,9 +18,18 @@ fn loadExtension(info: c.duckdb_extension_info, access: *c.duckdb_extension_acce
     var ext = try Extension.init(allocator, info, access);
     defer ext.deinit();
 
-    var func = ScalarFunction("quack", quackFunction).create();
+    var text_type = D.duckdb_create_logical_type.?(c.DUCKDB_TYPE_VARCHAR);
+    defer D.duckdb_destroy_logical_type.?(&text_type);
+
+    var func = ScalarFunction.init(
+        "quack",
+        &[_]c.duckdb_logical_type{text_type},
+        text_type,
+        quackFunction,
+    );
     defer func.deinit();
-    try ext.registerScalarFunction(func.ptr);
+
+    try ext.registerScalarFunction(func);
 }
 
 fn quackFunction(_: c.duckdb_function_info, input: c.duckdb_data_chunk, output: c.duckdb_vector) callconv(.C) void {

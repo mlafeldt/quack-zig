@@ -99,41 +99,47 @@ fn getAPI(info: c.duckdb_extension_info, access: *c.duckdb_extension_access) !AP
 
 pub fn registerScalarFunction(
     self: *Extension,
-    func: c.duckdb_scalar_function,
+    func: ScalarFunction,
 ) !void {
-    if (api.duckdb_register_scalar_function.?(self.conn.inner.*, func) == DuckDBError) {
+    if (api.duckdb_register_scalar_function.?(self.conn.inner.*, func.ptr) == DuckDBError) {
         self.access.set_error.?(self.info, "Failed to register scalar function");
         return error.RegisterScalarFunctionError;
     }
 }
 
-pub fn ScalarFunction(
-    comptime name: [*:0]const u8,
-    comptime func: c.duckdb_scalar_function_t,
-) type {
-    return struct {
-        const Self = @This();
+pub const ScalarFunction = struct {
+    name: [*:0]const u8,
+    func: c.duckdb_scalar_function_t,
+    ptr: c.duckdb_scalar_function,
 
-        ptr: c.duckdb_scalar_function,
+    const Self = @This();
 
-        pub fn create() Self {
-            const ptr = api.duckdb_create_scalar_function.?();
-            api.duckdb_scalar_function_set_name.?(ptr, name);
+    pub fn init(
+        name: [*:0]const u8,
+        params: []const c.duckdb_logical_type,
+        return_type: c.duckdb_logical_type,
+        func: c.duckdb_scalar_function_t,
+    ) Self {
+        const ptr = api.duckdb_create_scalar_function.?();
+        api.duckdb_scalar_function_set_name.?(ptr, name);
 
-            // HACK
-            var typ = api.duckdb_create_logical_type.?(c.DUCKDB_TYPE_VARCHAR);
-            defer api.duckdb_destroy_logical_type.?(&typ);
-            api.duckdb_scalar_function_add_parameter.?(ptr, typ);
-            api.duckdb_scalar_function_set_return_type.?(ptr, typ);
-
-            api.duckdb_scalar_function_set_function.?(ptr, func);
-
-            return .{ .ptr = ptr };
+        for (params) |param| {
+            api.duckdb_scalar_function_add_parameter.?(ptr, param);
         }
 
-        pub fn deinit(self: *Self) void {
-            api.duckdb_destroy_scalar_function.?(&self.ptr);
-            self.* = undefined;
-        }
-    };
-}
+        api.duckdb_scalar_function_set_return_type.?(ptr, return_type);
+
+        api.duckdb_scalar_function_set_function.?(ptr, func);
+
+        return .{
+            .name = name,
+            .func = func,
+            .ptr = ptr,
+        };
+    }
+
+    pub fn deinit(self: *Self) void {
+        api.duckdb_destroy_scalar_function.?(&self.ptr);
+        self.* = undefined;
+    }
+};
