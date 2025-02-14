@@ -3,6 +3,7 @@ const allocator = std.heap.raw_c_allocator;
 
 const Extension = @import("extension.zig");
 const ScalarFunction = Extension.ScalarFunction;
+const LogicalType = Extension.LogicalType;
 const D = &Extension.api;
 const c = Extension.c;
 
@@ -18,12 +19,12 @@ fn loadExtension(info: c.duckdb_extension_info, access: *c.duckdb_extension_acce
     var ext = try Extension.init(allocator, info, access);
     defer ext.deinit();
 
-    var text_type = D.duckdb_create_logical_type.?(c.DUCKDB_TYPE_VARCHAR);
-    defer D.duckdb_destroy_logical_type.?(&text_type);
+    var text_type = LogicalType.varchar();
+    defer text_type.deinit();
 
     var func = ScalarFunction.init(
         "quack",
-        &[_]c.duckdb_logical_type{text_type},
+        &.{text_type},
         text_type,
         quackFunction,
     );

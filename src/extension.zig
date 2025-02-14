@@ -116,18 +116,18 @@ pub const ScalarFunction = struct {
 
     pub fn init(
         name: [*:0]const u8,
-        params: []const c.duckdb_logical_type,
-        return_type: c.duckdb_logical_type,
+        params: []const LogicalType,
+        return_type: LogicalType,
         func: c.duckdb_scalar_function_t,
     ) Self {
         const ptr = api.duckdb_create_scalar_function.?();
         api.duckdb_scalar_function_set_name.?(ptr, name);
 
         for (params) |param| {
-            api.duckdb_scalar_function_add_parameter.?(ptr, param);
+            api.duckdb_scalar_function_add_parameter.?(ptr, param.ptr);
         }
 
-        api.duckdb_scalar_function_set_return_type.?(ptr, return_type);
+        api.duckdb_scalar_function_set_return_type.?(ptr, return_type.ptr);
 
         api.duckdb_scalar_function_set_function.?(ptr, func);
 
@@ -140,6 +140,36 @@ pub const ScalarFunction = struct {
 
     pub fn deinit(self: *Self) void {
         api.duckdb_destroy_scalar_function.?(&self.ptr);
+        self.* = undefined;
+    }
+};
+
+pub const DuckDBType = enum(c.enum_DUCKDB_TYPE) {
+    boolean = c.DUCKDB_TYPE_BOOLEAN,
+    varchar = c.DUCKDB_TYPE_VARCHAR,
+};
+
+pub const LogicalType = struct {
+    duckdb_type: DuckDBType,
+    ptr: c.duckdb_logical_type,
+
+    const Self = @This();
+
+    pub fn boolean() LogicalType {
+        return Self.init(DuckDBType.boolean);
+    }
+
+    pub fn varchar() LogicalType {
+        return Self.init(DuckDBType.varchar);
+    }
+
+    pub fn init(duckdb_type: DuckDBType) Self {
+        const ptr = api.duckdb_create_logical_type.?(@intFromEnum(duckdb_type));
+        return .{ .duckdb_type = duckdb_type, .ptr = ptr };
+    }
+
+    pub fn deinit(self: *LogicalType) void {
+        api.duckdb_destroy_logical_type.?(&self.ptr);
         self.* = undefined;
     }
 };
