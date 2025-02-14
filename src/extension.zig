@@ -12,42 +12,10 @@ else
     @compileError("unsupported DuckDB extension API version");
 
 pub const DB = struct {
-    inner: *c.duckdb_database,
+    ptr: *c.duckdb_database,
 
-    const Self = @This();
-
-    pub fn provided(db: *c.duckdb_database) Self {
-        return .{ .inner = db };
-    }
-};
-
-pub const Connection = struct {
-    allocator: Allocator,
-    api: API,
-    inner: *c.duckdb_connection,
-
-    const Self = @This();
-
-    pub fn open(allocator: Allocator, db: DB) !Self {
-        const conn = try allocator.create(c.duckdb_connection);
-        errdefer allocator.destroy(conn);
-
-        if (api.duckdb_connect.?(db.inner.*, conn) == DuckDBError) {
-            return error.ConnectError;
-        }
-
-        return .{
-            .allocator = allocator,
-            .api = api,
-            .inner = conn,
-        };
-    }
-
-    pub fn deinit(self: *Self) void {
-        const conn = self.inner;
-        self.api.duckdb_disconnect.?(conn);
-        self.allocator.destroy(conn);
-        self.* = undefined;
+    pub fn provided(db: *c.duckdb_database) DB {
+        return .{ .ptr = db };
     }
 };
 
@@ -83,6 +51,34 @@ pub fn deinit(self: *Extension) void {
     self.* = undefined;
 }
 
+pub const Connection = struct {
+    allocator: Allocator,
+    ptr: *c.duckdb_connection,
+
+    const Self = @This();
+
+    pub fn open(allocator: Allocator, db: DB) !Self {
+        const conn = try allocator.create(c.duckdb_connection);
+        errdefer allocator.destroy(conn);
+
+        if (api.duckdb_connect.?(db.ptr.*, conn) == DuckDBError) {
+            return error.ConnectError;
+        }
+
+        return .{
+            .allocator = allocator,
+            .ptr = conn,
+        };
+    }
+
+    pub fn deinit(self: *Self) void {
+        const conn = self.ptr;
+        api.duckdb_disconnect.?(conn);
+        self.allocator.destroy(conn);
+        self.* = undefined;
+    }
+};
+
 fn getAPI(info: c.duckdb_extension_info, access: *c.duckdb_extension_access) !API {
     const min_api_version = std.fmt.comptimePrint("v{d}.{d}.{d}", .{
         c.DUCKDB_EXTENSION_API_VERSION_MAJOR,
@@ -101,7 +97,7 @@ pub fn registerScalarFunction(
     self: *Extension,
     func: ScalarFunction,
 ) !void {
-    if (api.duckdb_register_scalar_function.?(self.conn.inner.*, func.ptr) == DuckDBError) {
+    if (api.duckdb_register_scalar_function.?(self.conn.ptr.*, func.ptr) == DuckDBError) {
         self.access.set_error.?(self.info, "Failed to register scalar function");
         return error.RegisterScalarFunctionError;
     }
