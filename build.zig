@@ -101,8 +101,6 @@ pub fn build(b: *Build) void {
             }).createModule());
 
             const build_options = b.addOptions();
-            build_options.addOption([]const u8, "ext_name", ext.name);
-            // build_options.addOption([]const u8, "ext_version", ext_version);
             build_options.addOption(DuckDBVersion, "duckdb_version", duckdb_version);
             build_options.addOption(Platform, "platform", platform);
             build_options.addOption([]const u8, "ext_api_version", duckdb_version.extensionAPIVersion());

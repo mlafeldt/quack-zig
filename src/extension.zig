@@ -22,6 +22,11 @@ const min_api_version = std.fmt.comptimePrint("v{d}.{d}.{d}", .{
     c.DUCKDB_EXTENSION_API_VERSION_PATCH,
 });
 
+comptime {
+    if (!std.mem.eql(u8, min_api_version, @import("build_options").ext_api_version))
+        @compileError("DuckDB extension API version mismatch");
+}
+
 // SAFETY: api is initialized in init
 pub var api: API = undefined;
 
