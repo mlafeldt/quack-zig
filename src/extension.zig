@@ -145,7 +145,7 @@ pub const ScalarFunction = struct {
 };
 
 pub const DuckDBType = enum(c.enum_DUCKDB_TYPE) {
-    // invalid = c.DUCKDB_TYPE_INVALID,
+    invalid = c.DUCKDB_TYPE_INVALID,
     boolean = c.DUCKDB_TYPE_BOOLEAN,
     tinyint = c.DUCKDB_TYPE_TINYINT,
     smallint = c.DUCKDB_TYPE_SMALLINT,
@@ -189,6 +189,7 @@ pub const LogicalType = struct {
     ptr: c.duckdb_logical_type,
 
     const Self = @This();
+    const jsonTypeName = "JSON";
 
     // TODO: add more constructors
 
@@ -200,10 +201,16 @@ pub const LogicalType = struct {
         return Self.init(DuckDBType.varchar);
     }
 
-    pub fn json() LogicalType {
+    pub fn JSON() LogicalType {
         const typ = Self.init(DuckDBType.varchar);
-        api.duckdb_logical_type_set_alias.?(typ.ptr, "JSON");
+        api.duckdb_logical_type_set_alias.?(typ.ptr, jsonTypeName);
         return typ;
+    }
+
+    pub fn isJSON(self: Self) bool {
+        if (self.duckdb_type != DuckDBType.varchar) return false;
+        const alias = api.duckdb_logical_type_get_alias.?(self.ptr);
+        return alias != null and std.mem.eql(u8, alias, jsonTypeName);
     }
 
     pub fn init(duckdb_type: DuckDBType) Self {
