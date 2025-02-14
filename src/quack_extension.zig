@@ -1,24 +1,29 @@
 const std = @import("std");
-const c_allocator = std.heap.raw_c_allocator;
+const allocator = std.heap.raw_c_allocator;
 
 const Extension = @import("extension.zig");
 const ScalarFunction = Extension.ScalarFunction;
-const c = Extension.c;
 const api = &Extension.api;
+const c = Extension.c;
 
 export fn quack_init_c_api(info: c.duckdb_extension_info, access: *c.duckdb_extension_access) bool {
-    var ext = Extension.init(c_allocator, info, access) catch return false;
-    defer ext.deinit();
-
-    var func = ScalarFunction("quack", quack_function).create();
-    defer func.deinit();
-
-    ext.registerScalarFunction(func.ptr) catch return false;
-
+    loadExtension(info, access) catch |err| {
+        std.log.err("Failed to load extension: {}", .{err});
+        return false;
+    };
     return true;
 }
 
-fn quack_function(_: c.duckdb_function_info, input: c.duckdb_data_chunk, output: c.duckdb_vector) callconv(.C) void {
+fn loadExtension(info: c.duckdb_extension_info, access: *c.duckdb_extension_access) !void {
+    var ext = try Extension.init(allocator, info, access);
+    defer ext.deinit();
+
+    var func = ScalarFunction("quack", quackFunction).create();
+    defer func.deinit();
+    try ext.registerScalarFunction(func.ptr);
+}
+
+fn quackFunction(_: c.duckdb_function_info, input: c.duckdb_data_chunk, output: c.duckdb_vector) callconv(.C) void {
     const quack_prefix = "Quack ";
     const quack_suffix = " 🐥";
 
@@ -41,13 +46,13 @@ fn quack_function(_: c.duckdb_function_info, input: c.duckdb_data_chunk, output:
         const name_str = api.duckdb_string_t_data.?(&name);
         const name_len = api.duckdb_string_t_length.?(name);
 
-        const result_str = std.mem.concat(c_allocator, u8, &[_][]const u8{
+        const result_str = std.mem.concat(allocator, u8, &[_][]const u8{
             quack_prefix,
             name_str[0..name_len],
             quack_suffix,
         }) catch @panic("OOM");
 
         api.duckdb_vector_assign_string_element_len.?(output, row, @ptrCast(result_str), result_str.len);
-        c_allocator.free(result_str);
+        allocator.free(result_str);
     }
 }
