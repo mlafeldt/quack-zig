@@ -3,6 +3,7 @@ pub const c = @import("duckdb_capi");
 
 const Allocator = std.mem.Allocator;
 const DuckDBError = c.DuckDBError;
+const Extension = @This();
 
 pub const API = if (@hasDecl(c, "duckdb_ext_api_v0"))
     c.duckdb_ext_api_v0
@@ -11,18 +12,22 @@ else if (@hasDecl(c, "duckdb_ext_api_v1"))
 else
     @compileError("unsupported DuckDB extension API version");
 
-pub const DB = struct {
-    ptr: *c.duckdb_database,
-
-    pub fn provided(db: *c.duckdb_database) DB {
-        return .{ .ptr = db };
-    }
-};
-
-const Extension = @This();
+const min_api_version = std.fmt.comptimePrint("v{d}.{d}.{d}", .{
+    c.DUCKDB_EXTENSION_API_VERSION_MAJOR,
+    c.DUCKDB_EXTENSION_API_VERSION_MINOR,
+    c.DUCKDB_EXTENSION_API_VERSION_PATCH,
+});
 
 // SAFETY: api is initialized in init
 pub var api: API = undefined;
+
+fn getAPI(info: c.duckdb_extension_info, access: *c.duckdb_extension_access) !API {
+    const maybe_api: ?*const API = @ptrCast(@alignCast(access.get_api.?(info, min_api_version)));
+    if (maybe_api == null) {
+        return error.APIVersionNotSupported;
+    }
+    return maybe_api.?.*;
+}
 
 info: c.duckdb_extension_info,
 access: *c.duckdb_extension_access,
@@ -30,6 +35,7 @@ db: DB,
 conn: Connection,
 
 pub fn init(allocator: Allocator, info: c.duckdb_extension_info, access: *c.duckdb_extension_access) !Extension {
+    // Must be called before anything else
     api = try getAPI(info, access);
 
     const db = DB.provided(access.get_database.?(info));
@@ -50,6 +56,14 @@ pub fn deinit(self: *Extension) void {
     self.conn.deinit();
     self.* = undefined;
 }
+
+pub const DB = struct {
+    ptr: *c.duckdb_database,
+
+    pub fn provided(db: *c.duckdb_database) DB {
+        return .{ .ptr = db };
+    }
+};
 
 pub const Connection = struct {
     allocator: Allocator,
@@ -78,20 +92,6 @@ pub const Connection = struct {
         self.* = undefined;
     }
 };
-
-fn getAPI(info: c.duckdb_extension_info, access: *c.duckdb_extension_access) !API {
-    const min_api_version = std.fmt.comptimePrint("v{d}.{d}.{d}", .{
-        c.DUCKDB_EXTENSION_API_VERSION_MAJOR,
-        c.DUCKDB_EXTENSION_API_VERSION_MINOR,
-        c.DUCKDB_EXTENSION_API_VERSION_PATCH,
-    });
-
-    const maybe_api: ?*const API = @ptrCast(@alignCast(access.get_api.?(info, min_api_version)));
-    if (maybe_api == null) {
-        return error.APIVersionNotSupported;
-    }
-    return maybe_api.?.*;
-}
 
 pub fn registerScalarFunction(
     self: *Extension,
