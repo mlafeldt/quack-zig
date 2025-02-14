@@ -16,7 +16,7 @@ export fn quack_init_c_api(info: c.duckdb_extension_info, access: *c.duckdb_exte
 }
 
 fn loadExtension(info: c.duckdb_extension_info, access: *c.duckdb_extension_access) !void {
-    var ext = try Extension.init(allocator, info, access);
+    var ext = try Extension.init(info, access);
     defer ext.deinit();
 
     var text_type = LogicalType.varchar();

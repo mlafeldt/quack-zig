@@ -1,7 +1,6 @@
 const std = @import("std");
 pub const c = @import("duckdb_capi");
 
-const Allocator = std.mem.Allocator;
 const assert = std.debug.assert;
 const DuckDBError = c.DuckDBError;
 const Extension = @This();
@@ -35,12 +34,12 @@ access: *c.duckdb_extension_access,
 db: DB,
 conn: Connection,
 
-pub fn init(allocator: Allocator, info: c.duckdb_extension_info, access: *c.duckdb_extension_access) !Extension {
+pub fn init(info: c.duckdb_extension_info, access: *c.duckdb_extension_access) !Extension {
     // Must be called before anything else
     api = try getAPI(info, access);
 
     const db = DB.provided(access.get_database.?(info));
-    const conn = Connection.open(allocator, db) catch |e| {
+    const conn = Connection.open(db) catch |e| {
         access.set_error.?(info, "Failed to open connection to database");
         return e;
     };
@@ -66,7 +65,7 @@ pub fn registerScalarFunction(
     self: *Extension,
     func: ScalarFunction,
 ) !void {
-    if (api.duckdb_register_scalar_function.?(self.conn.ptr.*, func.ptr) == DuckDBError) {
+    if (api.duckdb_register_scalar_function.?(self.conn.ptr, func.ptr) == DuckDBError) {
         self.setError("Failed to register scalar function");
         return error.RegisterScalarFunctionError;
     }
@@ -81,29 +80,21 @@ pub const DB = struct {
 };
 
 pub const Connection = struct {
-    allocator: Allocator,
-    ptr: *c.duckdb_connection,
+    ptr: c.duckdb_connection,
 
     const Self = @This();
 
-    pub fn open(allocator: Allocator, db: DB) !Self {
-        const conn = try allocator.create(c.duckdb_connection);
-        errdefer allocator.destroy(conn);
-
-        if (api.duckdb_connect.?(db.ptr.*, conn) == DuckDBError) {
+    pub fn open(db: DB) !Self {
+        var conn: c.duckdb_connection = null;
+        if (api.duckdb_connect.?(db.ptr.*, &conn) == DuckDBError) {
             return error.ConnectError;
         }
-
-        return .{
-            .allocator = allocator,
-            .ptr = conn,
-        };
+        assert(conn != null);
+        return .{ .ptr = conn };
     }
 
     pub fn deinit(self: *Self) void {
-        const conn = self.ptr;
-        api.duckdb_disconnect.?(conn);
-        self.allocator.destroy(conn);
+        api.duckdb_disconnect.?(&self.ptr);
         self.* = undefined;
     }
 };
