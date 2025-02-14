@@ -1,3 +1,7 @@
+// Props to:
+// https://github.com/karlseguin/zuckdb.zig
+// https://github.com/softprops/zig-duckdb-ext
+
 const std = @import("std");
 pub const c = @import("duckdb_capi");
 
@@ -136,9 +140,43 @@ pub const ScalarFunction = struct {
 };
 
 pub const DuckDBType = enum(c.enum_DUCKDB_TYPE) {
+    // invalid = c.DUCKDB_TYPE_INVALID,
     boolean = c.DUCKDB_TYPE_BOOLEAN,
+    tinyint = c.DUCKDB_TYPE_TINYINT,
+    smallint = c.DUCKDB_TYPE_SMALLINT,
+    integer = c.DUCKDB_TYPE_INTEGER,
+    bigint = c.DUCKDB_TYPE_BIGINT,
+    utinyint = c.DUCKDB_TYPE_UTINYINT,
+    usmallint = c.DUCKDB_TYPE_USMALLINT,
+    uinteger = c.DUCKDB_TYPE_UINTEGER,
+    ubigint = c.DUCKDB_TYPE_UBIGINT,
+    float = c.DUCKDB_TYPE_FLOAT,
+    double = c.DUCKDB_TYPE_DOUBLE,
+    timestamp = c.DUCKDB_TYPE_TIMESTAMP,
+    date = c.DUCKDB_TYPE_DATE,
+    time = c.DUCKDB_TYPE_TIME,
+    interval = c.DUCKDB_TYPE_INTERVAL,
+    hugeint = c.DUCKDB_TYPE_HUGEINT,
+    uhugeint = c.DUCKDB_TYPE_UHUGEINT,
     varchar = c.DUCKDB_TYPE_VARCHAR,
-    // ...
+    blob = c.DUCKDB_TYPE_BLOB,
+    decimal = c.DUCKDB_TYPE_DECIMAL,
+    timestamp_s = c.DUCKDB_TYPE_TIMESTAMP_S,
+    timestamp_ms = c.DUCKDB_TYPE_TIMESTAMP_MS,
+    timestamp_ns = c.DUCKDB_TYPE_TIMESTAMP_NS,
+    @"enum" = c.DUCKDB_TYPE_ENUM,
+    list = c.DUCKDB_TYPE_LIST,
+    @"struct" = c.DUCKDB_TYPE_STRUCT,
+    map = c.DUCKDB_TYPE_MAP,
+    array = c.DUCKDB_TYPE_ARRAY,
+    uuid = c.DUCKDB_TYPE_UUID,
+    @"union" = c.DUCKDB_TYPE_UNION,
+    bit = c.DUCKDB_TYPE_BIT,
+    time_tz = c.DUCKDB_TYPE_TIME_TZ,
+    timestamp_tz = c.DUCKDB_TYPE_TIMESTAMP_TZ,
+    any = c.DUCKDB_TYPE_ANY,
+    varint = c.DUCKDB_TYPE_VARINT,
+    sqlnull = c.DUCKDB_TYPE_SQLNULL,
 };
 
 pub const LogicalType = struct {
@@ -146,6 +184,8 @@ pub const LogicalType = struct {
     ptr: c.duckdb_logical_type,
 
     const Self = @This();
+
+    // TODO: add more constructors
 
     pub fn boolean() LogicalType {
         return Self.init(DuckDBType.boolean);
