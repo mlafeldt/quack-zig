@@ -2,6 +2,7 @@ const std = @import("std");
 pub const c = @import("duckdb_capi");
 
 const Allocator = std.mem.Allocator;
+const assert = std.debug.assert;
 const DuckDBError = c.DuckDBError;
 const Extension = @This();
 
@@ -57,6 +58,16 @@ pub fn deinit(self: *Extension) void {
     self.* = undefined;
 }
 
+pub fn registerScalarFunction(
+    self: *Extension,
+    func: ScalarFunction,
+) !void {
+    if (api.duckdb_register_scalar_function.?(self.conn.ptr.*, func.ptr) == DuckDBError) {
+        self.access.set_error.?(self.info, "Failed to register scalar function");
+        return error.RegisterScalarFunctionError;
+    }
+}
+
 pub const DB = struct {
     ptr: *c.duckdb_database,
 
@@ -93,16 +104,6 @@ pub const Connection = struct {
     }
 };
 
-pub fn registerScalarFunction(
-    self: *Extension,
-    func: ScalarFunction,
-) !void {
-    if (api.duckdb_register_scalar_function.?(self.conn.ptr.*, func.ptr) == DuckDBError) {
-        self.access.set_error.?(self.info, "Failed to register scalar function");
-        return error.RegisterScalarFunctionError;
-    }
-}
-
 pub const ScalarFunction = struct {
     name: [*:0]const u8,
     func: c.duckdb_scalar_function_t,
@@ -117,14 +118,13 @@ pub const ScalarFunction = struct {
         func: c.duckdb_scalar_function_t,
     ) Self {
         const ptr = api.duckdb_create_scalar_function.?();
-        api.duckdb_scalar_function_set_name.?(ptr, name);
+        assert(ptr != null);
 
+        api.duckdb_scalar_function_set_name.?(ptr, name);
         for (params) |param| {
             api.duckdb_scalar_function_add_parameter.?(ptr, param.ptr);
         }
-
         api.duckdb_scalar_function_set_return_type.?(ptr, return_type.ptr);
-
         api.duckdb_scalar_function_set_function.?(ptr, func);
 
         return .{
@@ -168,6 +168,7 @@ pub const LogicalType = struct {
 
     pub fn init(duckdb_type: DuckDBType) Self {
         const ptr = api.duckdb_create_logical_type.?(@intFromEnum(duckdb_type));
+        assert(ptr != null);
         return .{ .duckdb_type = duckdb_type, .ptr = ptr };
     }
 
