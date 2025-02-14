@@ -147,6 +147,7 @@ pub const ScalarFunction = struct {
 pub const DuckDBType = enum(c.enum_DUCKDB_TYPE) {
     boolean = c.DUCKDB_TYPE_BOOLEAN,
     varchar = c.DUCKDB_TYPE_VARCHAR,
+    // ...
 };
 
 pub const LogicalType = struct {
@@ -161,6 +162,12 @@ pub const LogicalType = struct {
 
     pub fn varchar() LogicalType {
         return Self.init(DuckDBType.varchar);
+    }
+
+    pub fn json() LogicalType {
+        const typ = Self.init(DuckDBType.varchar);
+        api.duckdb_logical_type_set_alias.?(typ.ptr, "JSON");
+        return typ;
     }
 
     pub fn init(duckdb_type: DuckDBType) Self {
