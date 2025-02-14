@@ -1,4 +1,6 @@
 const std = @import("std");
+const duckdb_version = @import("build_options").duckdb_version;
+
 const allocator = std.heap.raw_c_allocator;
 
 const Extension = @import("extension.zig");
@@ -8,8 +10,9 @@ const D = &Extension.api;
 const c = Extension.c;
 
 export fn quack_init_c_api(info: c.duckdb_extension_info, access: *c.duckdb_extension_access) bool {
+    std.log.info("Loading quack extension into DuckDB {s}", .{@tagName(duckdb_version)});
     loadExtension(info, access) catch |err| {
-        std.log.err("Failed to load extension: {}", .{err});
+        std.log.err("Failed to load quack extension: {}", .{err});
         return false;
     };
     return true;
