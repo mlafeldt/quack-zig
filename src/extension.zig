@@ -30,24 +30,22 @@ comptime {
 // SAFETY: api is initialized in init
 pub var api: API = undefined;
 
-fn getAPI(info: c.duckdb_extension_info, access: *c.duckdb_extension_access) !API {
-    const maybe_api: ?*const API = @ptrCast(@alignCast(access.get_api.?(info, min_api_version)));
-    if (maybe_api == null) {
-        return error.APIVersionNotSupported;
-    }
-    return maybe_api.?.*;
-}
-
 info: c.duckdb_extension_info,
 access: *c.duckdb_extension_access,
 db: DB,
 conn: Connection,
 
 pub fn init(info: c.duckdb_extension_info, access: *c.duckdb_extension_access) !Extension {
-    // Must be called before anything else
-    api = try getAPI(info, access);
+    const maybe_api: ?*const API = @ptrCast(@alignCast(access.get_api.?(info, min_api_version)));
+    if (maybe_api == null) {
+        return error.APIVersionNotSupported;
+    }
+    api = maybe_api.?.*;
 
-    const db = DB.provided(access.get_database.?(info));
+    const db_ptr = access.get_database.?(info);
+    assert(db_ptr != null);
+    const db = DB.provided(db_ptr.*);
+
     const conn = Connection.open(db) catch |e| {
         access.set_error.?(info, "Failed to open connection to database");
         return e;
@@ -81,9 +79,9 @@ pub fn registerScalarFunction(
 }
 
 pub const DB = struct {
-    ptr: *c.duckdb_database,
+    ptr: c.duckdb_database,
 
-    pub fn provided(db: *c.duckdb_database) DB {
+    pub fn provided(db: c.duckdb_database) DB {
         return .{ .ptr = db };
     }
 };
@@ -95,7 +93,7 @@ pub const Connection = struct {
 
     pub fn open(db: DB) !Self {
         var conn: c.duckdb_connection = null;
-        if (api.duckdb_connect.?(db.ptr.*, &conn) == DuckDBError) {
+        if (api.duckdb_connect.?(db.ptr, &conn) == DuckDBError) {
             return error.ConnectError;
         }
         assert(conn != null);
