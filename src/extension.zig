@@ -33,13 +33,17 @@ conn: Connection,
 pub fn init(info: c.duckdb_extension_info, access: *c.duckdb_extension_access) !Extension {
     const maybe_api: ?*const API = @ptrCast(@alignCast(access.get_api.?(info, api_version)));
     if (maybe_api == null) {
-        return error.APIVersionNotSupported;
+        // DuckDB will log an error, no need to call set_error
+        return error.GetAPIError;
     }
     api = maybe_api.?.*;
 
-    const db_ptr = access.get_database.?(info);
-    assert(db_ptr != null);
-    const db = DB.provided(db_ptr.*);
+    const maybe_db = access.get_database.?(info);
+    if (maybe_db == null) {
+        // DuckDB will log an error, no need to call set_error
+        return error.GetDatabaseError;
+    }
+    const db = DB.provided(maybe_db.*);
 
     const conn = Connection.open(db) catch |err| {
         access.set_error.?(info, "Failed to open connection to database");
