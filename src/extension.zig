@@ -16,16 +16,11 @@ else if (@hasDecl(c, "duckdb_ext_api_v1"))
 else
     @compileError("unsupported DuckDB extension API version");
 
-const min_api_version = std.fmt.comptimePrint("v{d}.{d}.{d}", .{
+pub const api_version = std.fmt.comptimePrint("v{d}.{d}.{d}", .{
     c.DUCKDB_EXTENSION_API_VERSION_MAJOR,
     c.DUCKDB_EXTENSION_API_VERSION_MINOR,
     c.DUCKDB_EXTENSION_API_VERSION_PATCH,
 });
-
-comptime {
-    if (!std.mem.eql(u8, min_api_version, @import("build_options").ext_api_version))
-        @compileError("DuckDB extension API version mismatch");
-}
 
 // SAFETY: api is initialized in init
 pub var api: API = undefined;
@@ -36,7 +31,7 @@ db: DB,
 conn: Connection,
 
 pub fn init(info: c.duckdb_extension_info, access: *c.duckdb_extension_access) !Extension {
-    const maybe_api: ?*const API = @ptrCast(@alignCast(access.get_api.?(info, min_api_version)));
+    const maybe_api: ?*const API = @ptrCast(@alignCast(access.get_api.?(info, api_version)));
     if (maybe_api == null) {
         return error.APIVersionNotSupported;
     }
@@ -46,9 +41,9 @@ pub fn init(info: c.duckdb_extension_info, access: *c.duckdb_extension_access) !
     assert(db_ptr != null);
     const db = DB.provided(db_ptr.*);
 
-    const conn = Connection.open(db) catch |e| {
+    const conn = Connection.open(db) catch |err| {
         access.set_error.?(info, "Failed to open connection to database");
-        return e;
+        return err;
     };
 
     return .{
