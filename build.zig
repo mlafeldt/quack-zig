@@ -113,6 +113,7 @@ const DuckDBVersion = enum {
     @"1.1.3",
     @"1.2.0",
     @"1.2.1",
+    @"1.2.2",
 
     const all = std.enums.values(@This());
 
@@ -123,14 +124,14 @@ const DuckDBVersion = enum {
     fn headers(self: @This(), b: *Build) Build.LazyPath {
         return switch (self) {
             .@"1.1.0", .@"1.1.1", .@"1.1.2", .@"1.1.3" => b.dependency("libduckdb_1_1_3", .{}).path(""),
-            .@"1.2.0", .@"1.2.1" => b.dependency("libduckdb_1_2_0", .{}).path(""),
+            .@"1.2.0", .@"1.2.1", .@"1.2.2" => b.dependency("libduckdb_1_2_2", .{}).path(""),
         };
     }
 
     fn extensionAPIVersion(self: @This()) [:0]const u8 {
         return switch (self) {
             .@"1.1.0", .@"1.1.1", .@"1.1.2", .@"1.1.3" => "v0.0.1",
-            .@"1.2.0", .@"1.2.1" => "v1.2.0",
+            .@"1.2.0", .@"1.2.1", .@"1.2.2" => "v1.2.0",
         };
     }
 };
