@@ -28,31 +28,32 @@ pub fn build(b: *Build) void {
             const platform_string = platform.toString();
             const target = platform.target(b);
 
-            const ext = b.addSharedLibrary(.{
-                .name = "quack",
+            const ext_name = "quack";
+            const ext_mod = b.createModule(.{
+                .link_libc = true,
                 .target = target,
                 .optimize = optimize,
             });
-            ext.addCSourceFiles(.{
+            ext_mod.addCSourceFiles(.{
                 .files = &.{
                     "quack_extension.c",
                 },
                 .root = b.path("src"),
                 .flags = &cflags,
             });
-            ext.addIncludePath(duckdb_headers);
-            ext.linkLibC();
-            ext.root_module.addCMacro("DUCKDB_EXTENSION_NAME", ext.name);
-            ext.root_module.addCMacro("DUCKDB_BUILD_LOADABLE_EXTENSION", "1");
+            ext_mod.addIncludePath(duckdb_headers);
+            ext_mod.addCMacro("DUCKDB_EXTENSION_NAME", ext_name);
+            ext_mod.addCMacro("DUCKDB_BUILD_LOADABLE_EXTENSION", "1");
+            const ext = b.addSharedLibrary(.{ .name = ext_name, .root_module = ext_mod });
 
-            const filename = b.fmt("{s}.duckdb_extension", .{ext.name});
+            const filename = b.fmt("{s}.duckdb_extension", .{ext_name});
             ext.install_name = b.fmt("@rpath/{s}", .{filename}); // macOS only
 
             const ext_path = path: {
                 const cmd = Build.Step.Run.create(b, b.fmt("metadata {s} {s}", .{ version_string, platform_string }));
                 cmd.addArgs(&.{ "uv", "run", "--python=3.12" });
                 cmd.addFileArg(metadata_script);
-                cmd.addArgs(&.{ "--extension-name", ext.name });
+                cmd.addArgs(&.{ "--extension-name", ext_name });
                 cmd.addArgs(&.{ "--extension-version", ext_version });
                 cmd.addArgs(&.{ "--duckdb-platform", platform_string });
                 cmd.addArgs(&.{ "--duckdb-version", duckdb_version.extensionAPIVersion() });
