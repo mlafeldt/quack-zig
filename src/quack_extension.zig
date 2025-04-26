@@ -46,11 +46,11 @@ export fn init(conn: c.duckdb_connection, info: c.duckdb_extension_info, access:
 
 const quack_prefix = "Quack ";
 const quack_suffix = " 🐥";
-export fn quack_function(
+fn quack_function(
     info: c.duckdb_function_info,
     input: c.duckdb_data_chunk,
     output: c.duckdb_vector,
-) void {
+) callconv(.c) void {
     const input_vector = api.duckdb_data_chunk_get_vector.?(input, 0);
     const input_data: [*]c.duckdb_string_t = @alignCast(@ptrCast(api.duckdb_vector_get_data.?(input_vector)));
     const input_mask = api.duckdb_vector_get_validity.?(input_vector);

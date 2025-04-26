@@ -12,7 +12,6 @@ typedef struct duckdb_extension_access duckdb_extension_access;
 #endif
 
 extern bool init(duckdb_connection conn, duckdb_extension_info info, duckdb_extension_access *access);
-extern void quack_function(duckdb_function_info info, duckdb_data_chunk input, duckdb_vector output);
 
 DUCKDB_EXTENSION_ENTRYPOINT(duckdb_connection conn, duckdb_extension_info info, duckdb_extension_access *access) {
     if (!init(conn, info, access)) {
