@@ -21,5 +21,7 @@ jobs:
         with:
           enable-cache: false
       - run: zig build -Dinstall-headers --verbose --summary new
+      - run: zig build -Dlang=zig -Dinstall-headers --verbose --summary new
       - run: zig build test -Dplatform=linux_amd64_gcc4 --summary new
+      - run: zig build test -Dlang=zig -Dplatform=linux_amd64_gcc4 --summary new
       - run: tree -ash zig-out
