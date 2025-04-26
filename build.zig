@@ -7,6 +7,8 @@ pub fn build(b: *Build) void {
     const platforms = b.option([]const Platform, "platform", "DuckDB platform(s) to build for (default: all)") orelse Platform.all;
     const install_headers = b.option(bool, "install-headers", "Install DuckDB C headers") orelse false;
     const flat = b.option(bool, "flat", "Install files without DuckDB version prefix") orelse false;
+    const ExtensionLanguage = enum { c, zig };
+    const lang = b.option(ExtensionLanguage, "lang", "Language to build the extension in (default: c)") orelse .c;
 
     if (flat and duckdb_versions.len > 1) {
         std.zig.fatal("-Dflat requires passing a specific DuckDB version", .{});
@@ -31,13 +33,18 @@ pub fn build(b: *Build) void {
             const ext_name = "quack";
             const ext_mod = b.createModule(.{
                 .link_libc = true,
+                .root_source_file = switch (lang) {
+                    .c => null,
+                    .zig => b.path("src/quack_extension.zig"),
+                },
                 .target = target,
                 .optimize = optimize,
             });
             ext_mod.addCSourceFiles(.{
-                .files = &.{
-                    "quack_extension.c",
-                },
+                .files = &.{switch (lang) {
+                    .c => "quack_extension.c",
+                    .zig => "quack_extension_zig_wrapper.c",
+                }},
                 .root = b.path("src"),
                 .flags = &cflags,
             });
