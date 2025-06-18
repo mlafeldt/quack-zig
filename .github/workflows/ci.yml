@@ -14,9 +14,14 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - uses: mlugg/setup-zig@v1
-        with:
-          version: "0.14.1"
+      - name: Install Zig
+        run: |
+          ZIG_VERSION=$(awk -F\" '/minimum_zig_version/ {print $2}' $GITHUB_WORKSPACE/build.zig.zon)
+          echo "Using Zig version $ZIG_VERSION"
+          mkdir -p $HOME/.zig
+          curl -fSs "https://pkg.machengine.org/zig/${ZIG_VERSION}/zig-x86_64-linux-${ZIG_VERSION}.tar.xz" | tar -xJ -C $HOME/.zig
+          echo "$HOME/.zig/zig-x86_64-linux-${ZIG_VERSION}" >> $GITHUB_PATH
+          echo "ZIG_LOCAL_CACHE_DIR=$HOME/.cache/zig" >> $GITHUB_ENV
       - uses: astral-sh/setup-uv@v5
         with:
           enable-cache: false
