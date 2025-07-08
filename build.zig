@@ -107,13 +107,19 @@ pub fn build(b: *Build) void {
 }
 
 const DuckDBVersion = enum {
-    @"1.1.0", // First version with C API support
+    // v1.1 (first version with C API support)
+    @"1.1.0",
     @"1.1.1",
     @"1.1.2",
     @"1.1.3",
+    // v1.2
     @"1.2.0",
     @"1.2.1",
     @"1.2.2",
+    // v1.3
+    @"1.3.0",
+    @"1.3.1",
+    @"1.3.2",
 
     const all = std.enums.values(@This());
 
@@ -125,6 +131,7 @@ const DuckDBVersion = enum {
         return switch (self) {
             .@"1.1.0", .@"1.1.1", .@"1.1.2", .@"1.1.3" => b.dependency("libduckdb_1_1_3", .{}).path(""),
             .@"1.2.0", .@"1.2.1", .@"1.2.2" => b.dependency("libduckdb_1_2_2", .{}).path(""),
+            .@"1.3.0", .@"1.3.1", .@"1.3.2" => b.dependency("libduckdb_1_3_2", .{}).path(""),
         };
     }
 
@@ -132,6 +139,7 @@ const DuckDBVersion = enum {
         return switch (self) {
             .@"1.1.0", .@"1.1.1", .@"1.1.2", .@"1.1.3" => "v0.0.1",
             .@"1.2.0", .@"1.2.1", .@"1.2.2" => "v1.2.0",
+            .@"1.3.0", .@"1.3.1", .@"1.3.2" => "v1.2.0",
         };
     }
 };

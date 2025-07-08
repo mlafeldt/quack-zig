@@ -83,23 +83,38 @@ Run the [SQL logic tests](https://duckdb.org/docs/dev/sqllogictest/intro.html) w
 
 ```
 ❯ zig build test --summary new
-[0/1] test/sql/quack.test
+[1/1] test/sql/quack.test
 SUCCESS
-[0/1] test/sql/quack.test
+[1/1] test/sql/quack.test
 SUCCESS
-[0/1] test/sql/quack.test
+[1/1] test/sql/quack.test
 SUCCESS
-[0/1] test/sql/quack.test
+[1/1] test/sql/quack.test
 SUCCESS
-[0/1] test/sql/quack.test
+[1/1] test/sql/quack.test
 SUCCESS
-Build Summary: 16/16 steps succeeded
+[1/1] test/sql/quack.test
+SUCCESS
+[1/1] test/sql/quack.test
+SUCCESS
+[1/1] test/sql/quack.test
+SUCCESS
+[1/1] test/sql/quack.test
+SUCCESS
+[1/1] test/sql/quack.test
+SUCCESS
+Build Summary: 31/31 steps succeeded
 test success
-├─ sqllogictest v1.1.0 osx_arm64 success 91ms MaxRSS:43M
-├─ sqllogictest v1.1.1 osx_arm64 success 92ms MaxRSS:44M
-├─ sqllogictest v1.1.2 osx_arm64 success 92ms MaxRSS:43M
-├─ sqllogictest v1.1.3 osx_arm64 success 93ms MaxRSS:44M
-└─ sqllogictest v1.2.0 osx_arm64 success 103ms MaxRSS:45M
+├─ sqllogictest v1.1.0 osx_arm64 success 91ms MaxRSS:46M
+├─ sqllogictest v1.1.1 osx_arm64 success 91ms MaxRSS:46M
+├─ sqllogictest v1.1.2 osx_arm64 success 92ms MaxRSS:45M
+├─ sqllogictest v1.1.3 osx_arm64 success 92ms MaxRSS:46M
+├─ sqllogictest v1.2.0 osx_arm64 success 109ms MaxRSS:47M
+├─ sqllogictest v1.2.1 osx_arm64 success 99ms MaxRSS:47M
+├─ sqllogictest v1.2.2 osx_arm64 success 101ms MaxRSS:48M
+├─ sqllogictest v1.3.0 osx_arm64 success 100ms MaxRSS:48M
+├─ sqllogictest v1.3.1 osx_arm64 success 101ms MaxRSS:48M
+└─ sqllogictest v1.3.2 osx_arm64 success 101ms MaxRSS:48M
 ```
 
 You can also pass `-Dduckdb-version` to test against a specific DuckDB version, or use `-Dplatform` to select a different native platform, e.g. `linux_amd64_gcc4` instead of `linux_amd64`.
@@ -108,9 +123,9 @@ You can also pass `-Dduckdb-version` to test against a specific DuckDB version, 
 
 ```
 ❯ duckdb -unsigned
-v1.2.0 5f5512b827
+DuckDB v1.3.2 (Ossivalis) 0b83e5d2f6
 Enter ".help" for usage hints.
-🟡◗ LOAD 'zig-out/v1.2.0/osx_arm64/quack.duckdb_extension';
+🟡◗ LOAD 'zig-out/v1.3.2/osx_arm64/quack.duckdb_extension';
 🟡◗ SELECT quack('Zig');
 ┌──────────────┐
 │ quack('Zig') │

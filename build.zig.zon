@@ -12,6 +12,10 @@
             .url = "https://github.com/duckdb/duckdb/releases/download/v1.2.2/libduckdb-src.zip",
             .hash = "N-V-__8AAIQgbgH4rGGT9XHi32ZCAebK5JlqHFsFywouo3RU",
         },
+        .libduckdb_1_3_2 = .{
+            .url = "https://github.com/duckdb/duckdb/releases/download/v1.3.2/libduckdb-src.zip",
+            .hash = "N-V-__8AAA-pfQHjn5KlxThNxpG-h0x-SJhI43U9VbDmAJbv",
+        },
         .extension_ci_tools = .{
             .url = "https://github.com/duckdb/extension-ci-tools/archive/v1.2.0.zip",
             .hash = "N-V-__8AAH1NAQB5lKS2XDrbSFDS8owjice1pR1UGZQP0Yn7",
