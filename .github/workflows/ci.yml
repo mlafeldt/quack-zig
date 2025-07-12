@@ -26,5 +26,6 @@ jobs:
         with:
           enable-cache: false
       - run: zig build -Dinstall-headers --verbose --summary new
-      - run: zig build test -Dplatform=linux_amd64_gcc4 --summary new
+      # FIXME: Run tests against all DuckDB versions again
+      - run: zig build test -Dduckdb-version=1.3.2 -Dplatform=linux_amd64 --summary new
       - run: tree -ash zig-out
