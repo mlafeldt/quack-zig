@@ -9,7 +9,7 @@ pub fn build(b: *Build) void {
     const flat = b.option(bool, "flat", "Install files without DuckDB version prefix") orelse false;
 
     if (flat and duckdb_versions.len > 1) {
-        std.zig.fatal("-Dflat requires passing a specific DuckDB version", .{});
+        std.process.fatal("-Dflat requires passing a specific DuckDB version", .{});
     }
 
     const test_step = b.step("test", "Run SQL logic tests");
@@ -28,10 +28,13 @@ pub fn build(b: *Build) void {
             const platform_string = platform.toString();
             const target = platform.target(b);
 
-            const ext = b.addSharedLibrary(.{
+            const ext = b.addLibrary(.{
                 .name = "quack",
-                .target = target,
-                .optimize = optimize,
+                .linkage = .dynamic,
+                .root_module = b.createModule(.{
+                    .target = target,
+                    .optimize = optimize,
+                }),
             });
             ext.addCSourceFiles(.{
                 .files = &.{

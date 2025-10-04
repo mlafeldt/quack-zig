@@ -19,7 +19,7 @@ jobs:
           ZIG_VERSION=$(awk -F\" '/minimum_zig_version/ {print $2}' $GITHUB_WORKSPACE/build.zig.zon)
           echo "Using Zig version $ZIG_VERSION"
           mkdir -p $HOME/.zig
-          curl -fSs "https://pkg.machengine.org/zig/${ZIG_VERSION}/zig-x86_64-linux-${ZIG_VERSION}.tar.xz" | tar -xJ -C $HOME/.zig
+          curl -fSs "https://ziglang.org/download/${ZIG_VERSION}/zig-x86_64-linux-${ZIG_VERSION}.tar.xz" | tar -xJ -C $HOME/.zig
           echo "$HOME/.zig/zig-x86_64-linux-${ZIG_VERSION}" >> $GITHUB_PATH
           echo "ZIG_LOCAL_CACHE_DIR=$HOME/.cache/zig" >> $GITHUB_ENV
       - uses: astral-sh/setup-uv@v5
