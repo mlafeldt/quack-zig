@@ -123,6 +123,8 @@ const DuckDBVersion = enum {
     @"1.3.0",
     @"1.3.1",
     @"1.3.2",
+    // v1.4
+    @"1.4.0",
 
     const all = std.enums.values(@This());
 
@@ -130,19 +132,24 @@ const DuckDBVersion = enum {
         return b.fmt("v{s}", .{@tagName(self)});
     }
 
-    fn headers(self: @This(), b: *Build) Build.LazyPath {
-        return switch (self) {
-            .@"1.1.0", .@"1.1.1", .@"1.1.2", .@"1.1.3" => b.dependency("libduckdb_1_1_3", .{}).path(""),
-            .@"1.2.0", .@"1.2.1", .@"1.2.2" => b.dependency("libduckdb_1_2_2", .{}).path(""),
-            .@"1.3.0", .@"1.3.1", .@"1.3.2" => b.dependency("libduckdb_1_3_2", .{}).path(""),
-        };
+    fn semver(self: @This()) std.SemanticVersion {
+        const v = std.SemanticVersion.parse(@tagName(self)) catch @panic("failed to parse DuckDB version");
+        std.debug.assert(v.major == 1);
+        return v;
     }
 
     fn extensionAPIVersion(self: @This()) [:0]const u8 {
-        return switch (self) {
-            .@"1.1.0", .@"1.1.1", .@"1.1.2", .@"1.1.3" => "v0.0.1",
-            .@"1.2.0", .@"1.2.1", .@"1.2.2" => "v1.2.0",
-            .@"1.3.0", .@"1.3.1", .@"1.3.2" => "v1.2.0",
+        if (self.semver().minor < 2) return "v0.0.1";
+        return "v1.2.0";
+    }
+
+    fn headers(self: @This(), b: *Build) Build.LazyPath {
+        return switch (self.semver().minor) {
+            1 => b.dependency("libduckdb_1_1_3", .{}).path(""),
+            2 => b.dependency("libduckdb_1_2_2", .{}).path(""),
+            3 => b.dependency("libduckdb_1_3_2", .{}).path(""),
+            4 => b.dependency("libduckdb_1_4_0", .{}).path(""),
+            else => unreachable,
         };
     }
 };
