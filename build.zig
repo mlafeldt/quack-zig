@@ -17,6 +17,7 @@ pub fn build(b: *Build) void {
 
     const metadata_script = b.dependency("extension_ci_tools", .{}).path("scripts/append_extension_metadata.py");
     const sqllogictest = b.dependency("sqllogictest", .{}).path("");
+    const duckdb_cpp_api = b.dependency("duckdb_cpp_api", .{}).path("");
 
     const ext_version = detectGitVersion(b) catch "n/a";
 
@@ -38,15 +39,19 @@ pub fn build(b: *Build) void {
             });
             ext.addCSourceFiles(.{
                 .files = &.{
-                    "quack_extension.c",
+                    "quack_extension.cpp",
                 },
                 .root = b.path("src"),
-                .flags = &cflags,
+                .flags = &cxxflags,
             });
             ext.addIncludePath(duckdb_headers);
+            ext.addIncludePath(duckdb_cpp_api);
             ext.linkLibC();
+            ext.linkLibCpp();
             ext.root_module.addCMacro("DUCKDB_EXTENSION_NAME", ext.name);
             ext.root_module.addCMacro("DUCKDB_BUILD_LOADABLE_EXTENSION", "1");
+            // Fix error: no member named 'duckdb_destroy_vector' in 'duckdb_ext_api_v1'
+            ext.root_module.addCMacro("DUCKDB_EXTENSION_API_VERSION_UNSTABLE", "1");
 
             const filename = b.fmt("{s}.duckdb_extension", .{ext.name});
             ext.install_name = b.fmt("@rpath/{s}", .{filename}); // macOS only
@@ -76,12 +81,13 @@ pub fn build(b: *Build) void {
             if (install_headers) {
                 const header_dirs = [_]Build.LazyPath{
                     duckdb_headers,
+                    duckdb_cpp_api,
                     // Add more header directories here
                 };
                 for (header_dirs) |dir| {
                     b.getInstallStep().dependOn(&b.addInstallDirectory(.{
                         .source_dir = dir,
-                        .include_extensions = &.{"h"},
+                        .include_extensions = &.{ "h", "hpp" },
                         .install_dir = if (flat) .header else .{ .custom = b.fmt("{s}/include", .{version_string}) },
                         .install_subdir = "",
                     }).step);
@@ -110,15 +116,6 @@ pub fn build(b: *Build) void {
 }
 
 const DuckDBVersion = enum {
-    // v1.1 (first version with C API support)
-    @"1.1.0",
-    @"1.1.1",
-    @"1.1.2",
-    @"1.1.3",
-    // v1.2
-    @"1.2.0",
-    @"1.2.1",
-    @"1.2.2",
     // v1.3
     @"1.3.0",
     @"1.3.1",
@@ -138,15 +135,13 @@ const DuckDBVersion = enum {
         return v;
     }
 
-    fn extensionAPIVersion(self: @This()) [:0]const u8 {
-        if (self.semver().minor < 2) return "v0.0.1";
+    fn extensionAPIVersion(_: @This()) [:0]const u8 {
+        // if (self.semver().minor < 2) return "v0.0.1";
         return "v1.2.0";
     }
 
     fn headers(self: @This(), b: *Build) Build.LazyPath {
         return switch (self.semver().minor) {
-            1 => b.dependency("libduckdb_1_1_3", .{}).path(""),
-            2 => b.dependency("libduckdb_1_2_2", .{}).path(""),
             3 => b.dependency("libduckdb_1_3_2", .{}).path(""),
             4 => b.dependency("libduckdb_1_4_0", .{}).path(""),
             else => unreachable,
@@ -236,9 +231,11 @@ fn detectGitVersion(b: *std.Build) ![]const u8 {
     return std.mem.trim(u8, git_describe, " \n\r");
 }
 
-const cflags = [_][]const u8{
+const cxxflags = [_][]const u8{
     "-Wall",
     "-Wextra",
     "-Werror",
+    "-Wno-unused-parameter",
+    "-Wno-missing-field-initializers",
     "-fvisibility=hidden", // Avoid symbol clashes
 };
