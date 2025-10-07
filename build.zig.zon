@@ -16,9 +16,9 @@
             .url = "https://github.com/duckdb/duckdb/releases/download/v1.3.2/libduckdb-src.zip",
             .hash = "N-V-__8AAA-pfQHjn5KlxThNxpG-h0x-SJhI43U9VbDmAJbv",
         },
-        .libduckdb_1_4_0 = .{
-            .url = "https://github.com/duckdb/duckdb/releases/download/v1.4.0/libduckdb-src.zip",
-            .hash = "N-V-__8AAPEskAFkfFSSgXB4AWpwmz2fYzF-4S9VztQRIIlf",
+        .libduckdb_1_4_1 = .{
+            .url = "https://github.com/duckdb/duckdb/releases/download/v1.4.1/libduckdb-src.zip",
+            .hash = "N-V-__8AAEiHkAGBTM0CrHTvmxh06_bgJTdptyOoTfx-Vudf",
         },
         .extension_ci_tools = .{
             .url = "https://github.com/duckdb/extension-ci-tools/archive/v1.2.0.zip",
@@ -26,8 +26,8 @@
         },
         // TODO: Switch to Python package once it's available
         .sqllogictest = .{
-            .url = "https://github.com/duckdb/duckdb-sqllogictest-python/archive/4db6a82.zip",
-            .hash = "N-V-__8AACGWAQAeZ-w0omkwYvd00zlnhs3220wqgo91ByN2",
+            .url = "https://github.com/duckdb/duckdb-sqllogictest-python/archive/be27216.zip",
+            .hash = "N-V-__8AANKWAQAm_rlt0HhnHTpWScqA_l0aUxmfmBjy0Ksa",
         },
     },
     .paths = .{""},

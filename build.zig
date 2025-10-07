@@ -125,6 +125,7 @@ const DuckDBVersion = enum {
     @"1.3.2",
     // v1.4
     @"1.4.0",
+    @"1.4.1",
 
     const all = std.enums.values(@This());
 
@@ -148,7 +149,7 @@ const DuckDBVersion = enum {
             1 => b.dependency("libduckdb_1_1_3", .{}).path(""),
             2 => b.dependency("libduckdb_1_2_2", .{}).path(""),
             3 => b.dependency("libduckdb_1_3_2", .{}).path(""),
-            4 => b.dependency("libduckdb_1_4_0", .{}).path(""),
+            4 => b.dependency("libduckdb_1_4_1", .{}).path(""),
             else => unreachable,
         };
     }
