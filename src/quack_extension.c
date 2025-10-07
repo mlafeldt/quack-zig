@@ -3,15 +3,6 @@
 
 DUCKDB_EXTENSION_EXTERN
 
-// Workaround for missing struct tag in DUCKDB_EXTENSION_ENTRYPOINT (DuckDB 1.1.x)
-typedef struct duckdb_extension_access duckdb_extension_access;
-
-#if DUCKDB_EXTENSION_API_VERSION_MAJOR >= 1
-#define EXTENSION_RETURN(result) return (result)
-#else
-#define EXTENSION_RETURN(result) return
-#endif
-
 #define QUACK_PREFIX "Quack "
 #define QUACK_SUFFIX " 🐥"
 
@@ -54,7 +45,7 @@ static void quack_function(duckdb_function_info info, duckdb_data_chunk input, d
     }
 }
 
-DUCKDB_EXTENSION_ENTRYPOINT(duckdb_connection conn, duckdb_extension_info info, duckdb_extension_access *access) {
+DUCKDB_EXTENSION_ENTRYPOINT(duckdb_connection conn, duckdb_extension_info info, struct duckdb_extension_access *access) {
     duckdb_scalar_function func = duckdb_create_scalar_function();
     duckdb_scalar_function_set_name(func, "quack");
 
@@ -67,9 +58,9 @@ DUCKDB_EXTENSION_ENTRYPOINT(duckdb_connection conn, duckdb_extension_info info, 
 
     if (duckdb_register_scalar_function(conn, func) == DuckDBError) {
         access->set_error(info, "Failed to register scalar function");
-        EXTENSION_RETURN(false);
+        return false;
     }
 
     duckdb_destroy_scalar_function(&func);
-    EXTENSION_RETURN(true);
+    return true;
 }

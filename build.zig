@@ -110,15 +110,6 @@ pub fn build(b: *Build) void {
 }
 
 const DuckDBVersion = enum {
-    // v1.1 (first version with C API support)
-    @"1.1.0",
-    @"1.1.1",
-    @"1.1.2",
-    @"1.1.3",
-    // v1.2
-    @"1.2.0",
-    @"1.2.1",
-    @"1.2.2",
     // v1.3
     @"1.3.0",
     @"1.3.1",
@@ -139,15 +130,12 @@ const DuckDBVersion = enum {
         return v;
     }
 
-    fn extensionAPIVersion(self: @This()) [:0]const u8 {
-        if (self.semver().minor < 2) return "v0.0.1";
+    fn extensionAPIVersion(_: @This()) [:0]const u8 {
         return "v1.2.0";
     }
 
     fn headers(self: @This(), b: *Build) Build.LazyPath {
         return switch (self.semver().minor) {
-            1 => b.dependency("libduckdb_1_1_3", .{}).path(""),
-            2 => b.dependency("libduckdb_1_2_2", .{}).path(""),
             3 => b.dependency("libduckdb_1_3_2", .{}).path(""),
             4 => b.dependency("libduckdb_1_4_1", .{}).path(""),
             else => unreachable,
@@ -156,10 +144,8 @@ const DuckDBVersion = enum {
 };
 
 const Platform = enum {
-    linux_amd64, // Node.js packages, etc.
-    linux_amd64_gcc4, // Python packages, CLI, etc.
+    linux_amd64,
     linux_arm64,
-    linux_arm64_gcc4,
     osx_amd64,
     osx_arm64,
     windows_amd64,
@@ -172,30 +158,16 @@ const Platform = enum {
     }
 
     fn target(self: @This(), b: *Build) Build.ResolvedTarget {
-        const manylinux2014_glibc_version = std.SemanticVersion{ .major = 2, .minor = 17, .patch = 0 };
-
         return b.resolveTargetQuery(switch (self) {
             .linux_amd64 => .{
                 .os_tag = .linux,
                 .cpu_arch = .x86_64,
                 .abi = .gnu,
             },
-            .linux_amd64_gcc4 => .{
-                .os_tag = .linux,
-                .cpu_arch = .x86_64,
-                .abi = .gnu,
-                .glibc_version = manylinux2014_glibc_version,
-            },
             .linux_arm64 => .{
                 .os_tag = .linux,
                 .cpu_arch = .aarch64,
                 .abi = .gnu,
-            },
-            .linux_arm64_gcc4 => .{
-                .os_tag = .linux,
-                .cpu_arch = .aarch64,
-                .abi = .gnu,
-                .glibc_version = manylinux2014_glibc_version,
             },
             .osx_amd64 => .{
                 .os_tag = .macos,
